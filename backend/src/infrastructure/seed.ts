@@ -4,6 +4,7 @@ import Hotel from './entities/Hotel';
 import Location from './entities/Location';
 import Review from './entities/Review';
 import Booking from './entities/Booking';
+import { generateEmbedding } from '../application/utils/embeddings';
 
 // Load environment variables
 dotenv.config();
@@ -66,7 +67,10 @@ const seedData = {
         { roomNumber: "101", roomType: "Single", pricePerNight: 8500, maxGuests: 1, isAvailable: true },
         { roomNumber: "102", roomType: "Double", pricePerNight: 9500, maxGuests: 2, isAvailable: true },
         { roomNumber: "201", roomType: "Suite", pricePerNight: 15000, maxGuests: 3, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 8500,
+      starRating: 5,
+      averageRating: 4.8
     },
     {
       name: "Imperial Palace Delhi",
@@ -79,7 +83,10 @@ const seedData = {
       rooms: [
         { roomNumber: "301", roomType: "Single", pricePerNight: 7200, maxGuests: 1, isAvailable: true },
         { roomNumber: "302", roomType: "Double", pricePerNight: 8200, maxGuests: 2, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 7200,
+      starRating: 4,
+      averageRating: 4.5
     },
     {
       name: "Tech City Suites",
@@ -92,7 +99,10 @@ const seedData = {
       rooms: [
         { roomNumber: "401", roomType: "Single", pricePerNight: 5500, maxGuests: 1, isAvailable: true },
         { roomNumber: "402", roomType: "Double", pricePerNight: 6500, maxGuests: 2, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 5500,
+      starRating: 4,
+      averageRating: 4.2
     },
     {
       name: "Marina Grand Resort",
@@ -105,7 +115,10 @@ const seedData = {
       rooms: [
         { roomNumber: "501", roomType: "Double", pricePerNight: 6800, maxGuests: 2, isAvailable: true },
         { roomNumber: "601", roomType: "Suite", pricePerNight: 12000, maxGuests: 3, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 6800,
+      starRating: 4,
+      averageRating: 4.6
     },
     {
       name: "Heritage Kolkata Hotel",
@@ -118,7 +131,10 @@ const seedData = {
       rooms: [
         { roomNumber: "701", roomType: "Single", pricePerNight: 4800, maxGuests: 1, isAvailable: true },
         { roomNumber: "702", roomType: "Double", pricePerNight: 5800, maxGuests: 2, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 4800,
+      starRating: 3,
+      averageRating: 4.1
     },
     {
       name: "Budget Inn Mumbai",
@@ -127,7 +143,10 @@ const seedData = {
       amenities: ["WiFi", "AC", "Restaurant", "24/7 Reception"],
       rooms: [
         { roomNumber: "801", roomType: "Single", pricePerNight: 2200, maxGuests: 1, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 2200,
+      starRating: 2,
+      averageRating: 3.5
     },
     {
       name: "Business Center Delhi",
@@ -136,7 +155,10 @@ const seedData = {
       amenities: ["WiFi", "Business Center", "Restaurant", "Gym", "Metro Connectivity"],
       rooms: [
         { roomNumber: "901", roomType: "Double", pricePerNight: 3800, maxGuests: 2, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 3800,
+      starRating: 3,
+      averageRating: 3.8
     },
     {
       name: "Garden View Bangalore",
@@ -146,7 +168,10 @@ const seedData = {
       rooms: [
         { roomNumber: "1001", roomType: "Single", pricePerNight: 4200, maxGuests: 1, isAvailable: true },
         { roomNumber: "1002", roomType: "Double", pricePerNight: 5200, maxGuests: 2, isAvailable: true }
-      ]
+      ],
+      priceStartingFrom: 4200,
+      starRating: 3,
+      averageRating: 4.0
     }
   ],
 
@@ -238,14 +263,40 @@ export const seedDatabase = async () => {
     const createdLocations = await Location.insertMany(seedData.locations);
     console.log(`✅ Created ${createdLocations.length} locations`);
 
-    // Seed hotels with location references
-    console.log('🏨 Seeding hotels...');
-    const hotelsWithLocations = seedData.hotels.map((hotel, index) => ({
-      ...hotel,
-      location: createdLocations[index % createdLocations.length]._id
-    }));
-    const createdHotels = await Hotel.insertMany(hotelsWithLocations);
-    console.log(`✅ Created ${createdHotels.length} hotels`);
+    // Seed hotels with location references and embeddings
+    console.log('🏨 Seeding hotels with embeddings...');
+    const hotelsWithLocationsAndEmbeddings = [];
+    
+    for (let i = 0; i < seedData.hotels.length; i++) {
+      const hotel = seedData.hotels[i];
+      const location = createdLocations[i % createdLocations.length];
+      
+      console.log(`🤖 Generating embedding for ${hotel.name}...`);
+      
+      try {
+        // Create embedding text from hotel data
+        const embeddingText = `${hotel.name} ${hotel.description} ${hotel.amenities.join(' ')} ${location.city} ${location.country}`;
+        const embedding = await generateEmbedding(embeddingText);
+        
+        hotelsWithLocationsAndEmbeddings.push({
+          ...hotel,
+          location: location._id,
+          embedding: embedding
+        });
+        
+        console.log(`✅ Generated embedding for ${hotel.name}`);
+      } catch (error) {
+        console.warn(`⚠️  Failed to generate embedding for ${hotel.name}:`, error instanceof Error ? error.message : 'Unknown error');
+        // Add hotel without embedding as fallback
+        hotelsWithLocationsAndEmbeddings.push({
+          ...hotel,
+          location: location._id
+        });
+      }
+    }
+    
+    const createdHotels = await Hotel.insertMany(hotelsWithLocationsAndEmbeddings);
+    console.log(`✅ Created ${createdHotels.length} hotels with embeddings`);
 
     // Seed reviews with hotel references
     console.log('⭐ Seeding reviews...');

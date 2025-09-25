@@ -1,25 +1,30 @@
 import { Schema, model, Document, Types } from 'mongoose';
-import { ILocation } from './Location'; // Assuming Location.ts is in the same directory
+import { ILocation } from './Location';
 
-// Interface for the embedded Room sub-document. Note: It does NOT extend Document.
+// Interface for the embedded Room sub-document
 export interface IRoom {
   roomNumber: string;
-  roomType: 'Single' | 'Double' | 'Suite'; // Using TypeScript's string literal types
+  roomType: 'Single' | 'Double' | 'Suite';
   pricePerNight: number;
   maxGuests: number;
   isAvailable: boolean;
 }
 
-// Interface for the Hotel document
+// Interface for the Hotel document, including the new fields
 export interface IHotel extends Document {
   name: string;
   description: string;
-  location: Types.ObjectId | ILocation; // Can be populated with the full ILocation object
+  location: Types.ObjectId | ILocation;
   imageUrls: string[];
   amenities: string[];
   rooms: IRoom[];
   reviews: Types.ObjectId[];
   embedding?: number[];
+  
+  // --- NEW FIELDS FOR FILTERING ---
+  priceStartingFrom: number; // For efficient price filtering/sorting
+  starRating: number;         // For filtering by star category
+  averageRating: number;      // For efficient rating filtering/sorting
 }
 
 const roomSchema = new Schema<IRoom>({
@@ -39,6 +44,12 @@ const hotelSchema = new Schema<IHotel>({
   rooms: [roomSchema],
   reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
   embedding: { type: [Number], select: false },
+  
+  // --- SCHEMA DEFINITION FOR NEW FIELDS ---
+  priceStartingFrom: { type: Number, required: true, index: true },
+  starRating: { type: Number, required: true, min: 1, max: 5, index: true },
+  averageRating: { type: Number, default: 0, min: 0, max: 5, index: true },
+
 }, { 
   timestamps: true 
 });
