@@ -10,64 +10,40 @@ export const getAllHotels = async (req: Request, res: Response, next: NextFuncti
   try {
     const { country } = req.query as { country?: string };
 
-    const pipeline: any[] = [];
+    let query = {};
+    let populateOptions = '';
 
+    // If country filter is needed, we need to populate location
     if (country && country.trim().length > 0) {
-      const escaped = country.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      pipeline.push(
-        {
-          $lookup: {
-            from: "locations",
-            localField: "location",
-            foreignField: "_id",
-            as: "locationDoc",
-          }
-        },
-        { $unwind: "$locationDoc" },
-        { $match: { "locationDoc.country": { $regex: `^${escaped}$`, $options: "i" } } },
+      populateOptions = 'location';
+    }
+
+    const hotels = await Hotel.find(query)
+      .populate(populateOptions)
+      .select('_id name description imageUrls starRating averageRating priceStartingFrom amenities location')
+      .lean();
+
+    // Filter by country if specified and add imageUrl
+    let filteredHotels = hotels;
+    if (country && country.trim().length > 0) {
+      filteredHotels = hotels.filter((hotel: any) => 
+        hotel.location?.country?.toLowerCase() === country.toLowerCase()
       );
     }
 
-    pipeline.push(
-      {
-        $lookup: {
-          from: "reviews",
-          let: { hotelId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$hotelId", "$$hotelId"] } } },
-            { $project: { rating: 1 } }
-          ],
-          as: "reviewsDocs"
-        }
-      },
-      {
-        $addFields: {
-          rating: {
-            $cond: [
-              { $gt: [{ $size: "$reviewsDocs" }, 0] },
-              { $round: [{ $avg: "$reviewsDocs.rating" }, 1] },
-              0
-            ]
-          },
-          priceFrom: { $min: "$rooms.pricePerNight" },
-          imageUrl: { $ifNull: [{ $arrayElemAt: ["$imageUrls", 0] }, null] }
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          description: 1,
-          imageUrl: 1,
-          priceFrom: 1,
-          rating: 1,
-          amenities: { $slice: ["$amenities", 8] }
-        }
-      }
-    );
+    // Transform data for frontend
+    const transformedHotels = filteredHotels.map((hotel: any) => ({
+      _id: hotel._id,
+      name: hotel.name,
+      description: hotel.description,
+      imageUrl: hotel.imageUrls?.[0] || null,
+      starRating: hotel.starRating,
+      averageRating: hotel.averageRating,
+      priceStartingFrom: hotel.priceStartingFrom,
+      amenities: hotel.amenities?.slice(0, 8) || []
+    }));
 
-    const hotels = await Hotel.aggregate(pipeline);
-    res.status(200).json(hotels);
+    res.status(200).json(transformedHotels);
   } catch (error) {
     next(error);
   }
@@ -106,17 +82,9 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
         }
       },
       
-      // Calculate rating statistics
+      // Calculate detailed room and pricing statistics
       {
         $addFields: {
-          // Calculate average rating and review count
-          averageRating: {
-            $cond: [
-              { $gt: [{ $size: "$reviewDetails" }, 0] },
-              { $round: [{ $avg: "$reviewDetails.rating" }, 1] },
-              0
-            ]
-          },
           totalReviews: { $size: "$reviewDetails" },
           
           // Calculate price range from rooms
@@ -139,7 +107,7 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
             }
           },
           
-          // Group rooms by type
+          // Group rooms by type for better organization
           roomsByType: {
             $reduce: {
               input: "$rooms",
@@ -211,7 +179,7 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
             coordinates: "$locationDetails.coordinates"
           },
           
-          // Room information
+          // Room information with detailed breakdown
           rooms: "$rooms",
           availableRooms: 1,
           unavailableRooms: 1,
@@ -219,12 +187,16 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
           totalRooms: { $size: "$rooms" },
           availableRoomsCount: { $size: "$availableRooms" },
           
-          // Pricing information
+          // Pricing information (using stored values + calculated range)
           priceRange: 1,
+          priceStartingFrom: 1,  // Direct from stored field
           
-          // Rating and review information
-          averageRating: 1,
+          // Rating information (using stored values)
+          starRating: 1,         // Direct from stored field
+          averageRating: 1,      // Direct from stored field
           totalReviews: 1,
+          
+          // Reviews with detailed information
           reviews: {
             $map: {
               input: "$reviewDetails",

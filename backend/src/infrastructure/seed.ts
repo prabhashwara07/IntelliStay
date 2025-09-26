@@ -62,7 +62,7 @@ const seedData = {
         "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9",
         "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b"
       ],
-      amenities: ["WiFi", "Pool", "Spa", "Restaurant", "Room Service", "Gym", "Business Center"],
+      amenities: ["wifi", "pool", "spa", "restaurant", "room_service", "gym", "business_center"],
       rooms: [
         { roomNumber: "101", roomType: "Single", pricePerNight: 8500, maxGuests: 1, isAvailable: true },
         { roomNumber: "102", roomType: "Double", pricePerNight: 9500, maxGuests: 2, isAvailable: true },
@@ -79,7 +79,7 @@ const seedData = {
         "https://images.unsplash.com/photo-1564501049412-61c2a3083791",
         "https://images.unsplash.com/photo-1571896349842-33c89424de2d"
       ],
-      amenities: ["WiFi", "Restaurant", "Bar", "Concierge", "Valet Parking", "Conference Rooms"],
+      amenities: ["wifi", "restaurant", "concierge", "parking", "business_center"],
       rooms: [
         { roomNumber: "301", roomType: "Single", pricePerNight: 7200, maxGuests: 1, isAvailable: true },
         { roomNumber: "302", roomType: "Double", pricePerNight: 8200, maxGuests: 2, isAvailable: true }
@@ -95,7 +95,7 @@ const seedData = {
         "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa",
         "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6"
       ],
-      amenities: ["WiFi", "Business Center", "Meeting Rooms", "Gym", "Restaurant", "Coffee Shop"],
+      amenities: ["wifi", "business_center", "gym", "restaurant", "breakfast"],
       rooms: [
         { roomNumber: "401", roomType: "Single", pricePerNight: 5500, maxGuests: 1, isAvailable: true },
         { roomNumber: "402", roomType: "Double", pricePerNight: 6500, maxGuests: 2, isAvailable: true }
@@ -111,7 +111,7 @@ const seedData = {
         "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
         "https://images.unsplash.com/photo-1578662996442-48f60103fc96"
       ],
-      amenities: ["WiFi", "Beach Access", "Pool", "Restaurant", "Bar", "Spa", "Water Sports"],
+      amenities: ["wifi", "pool", "restaurant", "spa", "balcony"],
       rooms: [
         { roomNumber: "501", roomType: "Double", pricePerNight: 6800, maxGuests: 2, isAvailable: true },
         { roomNumber: "601", roomType: "Suite", pricePerNight: 12000, maxGuests: 3, isAvailable: true }
@@ -127,7 +127,7 @@ const seedData = {
         "https://images.unsplash.com/photo-1590490360182-c33d57733427",
         "https://images.unsplash.com/photo-1584132967334-10e028bd69f7"
       ],
-      amenities: ["WiFi", "Restaurant", "Heritage Tours", "Library", "Tea Lounge", "Cultural Programs"],
+      amenities: ["wifi", "restaurant", "concierge", "business_center"],
       rooms: [
         { roomNumber: "701", roomType: "Single", pricePerNight: 4800, maxGuests: 1, isAvailable: true },
         { roomNumber: "702", roomType: "Double", pricePerNight: 5800, maxGuests: 2, isAvailable: true }
@@ -140,7 +140,7 @@ const seedData = {
       name: "Budget Inn Mumbai",
       description: "Comfortable and affordable accommodation with essential amenities for budget-conscious travelers.",
       imageUrls: ["https://images.unsplash.com/photo-1561501900-3701fa6a0864"],
-      amenities: ["WiFi", "AC", "Restaurant", "24/7 Reception"],
+      amenities: ["wifi", "air_conditioning", "restaurant", "24_hour_front_desk"],
       rooms: [
         { roomNumber: "801", roomType: "Single", pricePerNight: 2200, maxGuests: 1, isAvailable: true }
       ],
@@ -152,7 +152,7 @@ const seedData = {
       name: "Business Center Delhi",
       description: "Strategic location for business travelers with easy access to metro and commercial areas.",
       imageUrls: ["https://images.unsplash.com/photo-1571896349842-33c89424de2d"],
-      amenities: ["WiFi", "Business Center", "Restaurant", "Gym", "Metro Connectivity"],
+      amenities: ["wifi", "business_center", "restaurant", "gym"],
       rooms: [
         { roomNumber: "901", roomType: "Double", pricePerNight: 3800, maxGuests: 2, isAvailable: true }
       ],
@@ -164,7 +164,7 @@ const seedData = {
       name: "Garden View Bangalore",
       description: "Peaceful hotel surrounded by lush gardens, perfect for relaxation after busy work days.",
       imageUrls: ["https://images.unsplash.com/photo-1596394516093-501ba68a0ba6"],
-      amenities: ["WiFi", "Garden", "Pool", "Restaurant", "Yoga Center", "Jogging Track"],
+      amenities: ["wifi", "pool", "restaurant", "gym", "balcony"],
       rooms: [
         { roomNumber: "1001", roomType: "Single", pricePerNight: 4200, maxGuests: 1, isAvailable: true },
         { roomNumber: "1002", roomType: "Double", pricePerNight: 5200, maxGuests: 2, isAvailable: true }

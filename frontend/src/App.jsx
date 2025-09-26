@@ -12,8 +12,9 @@ function App() {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <Header />
+        
         <main>
+          
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/hotel/:id" element={<HotelView />} />
