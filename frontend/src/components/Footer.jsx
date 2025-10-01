@@ -4,8 +4,12 @@ import { Button } from '@/src/components/ui/button';
 
 export default function Footer() {
   return (
-    <footer className="bg-card dark:bg-card text-card-foreground border-t border-border">
-      <div className="max-w-7xl mx-auto px-6 py-12">
+    <footer className="relative overflow-hidden bg-card dark:bg-card text-card-foreground border-t border-border">
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-primary/15 via-transparent to-brand-accent/15 dark:from-brand-primary/20 dark:to-brand-accent/20"
+        aria-hidden="true"
+      />
+      <div className="relative max-w-7xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="col-span-1 md:col-span-2">

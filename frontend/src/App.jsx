@@ -6,6 +6,8 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import HotelView from "./pages/HotelView";
 import AboutUs from "./pages/AboutUs";
+import MyAccount from "./pages/MyAccount";
+import Hotels from "./pages/Hotels";
 import Contact from "./pages/Contact";
 
 function App() {
@@ -18,8 +20,10 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/hotel/:id" element={<HotelView />} />
+            <Route path="/hotels" element={<Hotels />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/my-account" element={<MyAccount />} />
           </Routes>
         </main>
         <Footer />

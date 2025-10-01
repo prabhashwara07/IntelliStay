@@ -109,9 +109,7 @@ export default function HotelCard({ hotel, onViewDetails }) {
                   {averageRating.toFixed(1)}
                 </span>
               </div>
-              <span className="text-xs text-muted-foreground mt-0.5">
-                Customer Rating
-              </span>
+              
             </div>
           )}
         </div>
