@@ -6,6 +6,7 @@ import errorHandler from "./api/middleware/errorHandler";
 import HotelRouter from "./api/hotel";
 import LocationRouter from "./api/location";
 import connectDB from "./infrastructure/database";
+import BillingProfileRouter from "./api/billingProfile";
 
 // Load environment variables first
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(clerkMiddleware());
 
 app.use("/hotels", HotelRouter);
 app.use("/locations", LocationRouter);
+app.use("/billing-profiles", BillingProfileRouter);
 
 app.use(errorHandler);
 

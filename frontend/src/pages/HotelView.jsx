@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/src/components/ui/carousel';
 import { useGetHotelByIdQuery } from '@/src/store/api';
 
 
@@ -66,32 +67,10 @@ export default function HotelView() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header with back button */}
-      <div className="sticky top-0 z-40 bg-white border-b border-subtle">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
-              className="flex items-center gap-2 hover:text-primary hover:bg-transparent"
-              onClick={handleBackToSearch}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Search
-            </Button>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
-                <Heart className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background mt-30">
+      
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto py-6">
         {/* Hotel Header */}
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
@@ -133,47 +112,29 @@ export default function HotelView() {
 
         {/* Image Gallery */}
         <div className="mb-8">
-          <Card className="overflow-hidden">
-            <div className="relative h-64 md:h-96">
-              <img
-                src={images[currentImageIndex]}
-                alt={`${hotel.name} - Image ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/10" />
-              
-              {/* Navigation arrows */}
-              <Button
-                variant="secondary"
-                size="sm"
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-                onClick={prevImage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-                onClick={nextImage}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-
-              {/* Image indicators */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                    }`}
-                    onClick={() => setCurrentImageIndex(index)}
-                  />
-                ))}
-              </div>
-            </div>
-          </Card>
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-0">
+              {images.map((image, index) => (
+                <CarouselItem key={index} className="pl-0">
+                  <div className="relative h-64 md:h-96 rounded-lg overflow-hidden">
+                    <img
+                      src={image}
+                      alt={`${hotel.name} - Image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/10" />
+                    
+                    {/* Image counter */}
+                    <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                      {index + 1} / {images.length}
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-4" />
+            <CarouselNext className="right-4" />
+          </Carousel>
         </div>
 
         {/* Hotel Details */}

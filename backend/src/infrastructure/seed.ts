@@ -4,6 +4,7 @@ import Hotel from './entities/Hotel';
 import Location from './entities/Location';
 import Review from './entities/Review';
 import Booking from './entities/Booking';
+import BillingProfile from './entities/BillingProfile';
 import { generateEmbedding } from '../application/utils/embeddings';
 
 // Load environment variables
@@ -233,6 +234,36 @@ const seedData = {
       totalPrice: 34000,
       paymentStatus: "PENDING"
     }
+  ],
+
+  billingProfiles: [
+    {
+      userId: "user_demo_1",
+      address: "123 Main Street, Colpetty",
+      city: "Colombo",
+      country: "Sri Lanka",
+      currency: "LKR",
+      isDefault: true,
+      isActive: true
+    },
+    {
+      userId: "user_demo_2", 
+      address: "456 Business Avenue, Fort",
+      city: "Colombo", 
+      country: "Sri Lanka",
+      currency: "LKR",
+      isDefault: true,
+      isActive: true
+    },
+    {
+      userId: "user_demo_3",
+      address: "789 Tech Park, Rajagiriya",
+      city: "Colombo",
+      country: "Sri Lanka", 
+      currency: "USD", // User prefers USD
+      isDefault: true,
+      isActive: true
+    }
   ]
 };
 
@@ -254,7 +285,8 @@ export const seedDatabase = async () => {
       Hotel.deleteMany({}),
       Location.deleteMany({}),
       Review.deleteMany({}),
-      Booking.deleteMany({})
+      Booking.deleteMany({}),
+      BillingProfile.deleteMany({})
     ]);
     console.log('🗑️  Cleared existing data');
 

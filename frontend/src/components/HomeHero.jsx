@@ -31,20 +31,20 @@ const hotelImages = [
 
 export default function HomeHero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
+    <section className="relative min-h-[70vh] md:min-h-[75vh] my-6 mx-6 md:mx-10 flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/15 shadow-2xl bg-black/80">
       {/* Background Image with Blur */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat filter blur-md"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat filter blur-md scale-105"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=400&fit=crop')`
         }}
       ></div>
       
       {/* Stronger Dark Overlay for better text visibility */}
-      <div className="absolute inset-0 bg-black/70"></div>
+      <div className="absolute inset-0 bg-black/65 backdrop-brightness-75"></div>
       
       {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-12 md:pt-8">
         {/* Hero Title */}
         <div className="mb-12">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
@@ -94,9 +94,9 @@ export default function HomeHero() {
       </div>
 
       {/* Subtle decorative elements using brand colors */}
-      <div className="absolute top-1/4 left-8 w-16 h-16 bg-brand-primary/20 rounded-full backdrop-blur-sm"></div>
-      <div className="absolute bottom-1/4 right-8 w-24 h-24 bg-brand-accent/20 rounded-full backdrop-blur-sm"></div>
-      <div className="absolute top-1/3 right-16 w-8 h-8 bg-brand-accent/30 rounded-full backdrop-blur-sm"></div>
+      <div className="absolute top-1/4 left-8 w-16 h-16 bg-brand-primary/25 rounded-full backdrop-blur-sm"></div>
+      <div className="absolute bottom-1/4 right-8 w-24 h-24 bg-brand-accent/25 rounded-full backdrop-blur-sm"></div>
+      <div className="absolute top-1/3 right-16 w-8 h-8 bg-brand-accent/40 rounded-full backdrop-blur-sm"></div>
     </section>
   );
 }
