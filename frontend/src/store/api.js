@@ -15,7 +15,7 @@ export const api = createApi({
       return headers
     },
   }),
-  tagTypes: ['Hotels'],
+  tagTypes: ['Hotels', 'BillingProfile', 'Bookings'],
   endpoints: (build) => ({
     getAllHotels: build.query({
       query: (country) => country && country.length > 0
@@ -34,6 +34,41 @@ export const api = createApi({
     getCountries: build.query({
       query: () => 'locations/countries',
     }),
+    getBillingProfile: build.query({
+      query: (userId) => `billing-profile/${userId}`,
+      providesTags: (_result, _error, userId) => [{ type: 'BillingProfile', id: userId }],
+    }),
+    createOrUpdateBillingProfile: build.mutation({
+      query: (body) => ({
+        url: 'billing-profile',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { userId }) => [{ type: 'BillingProfile', id: userId }],
+    }),
+    getBookingsByUserId: build.query({
+      query: ({ userId, paymentStatus, startDate, endDate }) => {
+        let url = `bookings/user/${userId}`;
+        const params = new URLSearchParams();
+        
+        if (paymentStatus && paymentStatus !== 'all') {
+          params.append('paymentStatus', paymentStatus);
+        }
+        if (startDate) {
+          params.append('startDate', startDate);
+        }
+        if (endDate) {
+          params.append('endDate', endDate);
+        }
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+        
+        return url;
+      },
+      providesTags: (_result, _error, { userId }) => [{ type: 'Bookings', id: userId }],
+    }),
   }),
 })
 
@@ -42,6 +77,7 @@ export const {
   useGetHotelByIdQuery,
   useGetHotelsBySearchQuery,
   useGetCountriesQuery,
+  useGetBillingProfileQuery,
+  useCreateOrUpdateBillingProfileMutation,
+  useGetBookingsByUserIdQuery,
 } = api
-
-

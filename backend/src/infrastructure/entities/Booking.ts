@@ -9,6 +9,8 @@ export interface IBooking extends Document {
   numberOfGuests: number;
   totalPrice: number;
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const bookingSchema = new Schema<IBooking>({

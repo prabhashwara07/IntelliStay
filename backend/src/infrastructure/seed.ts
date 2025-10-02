@@ -211,7 +211,7 @@ const seedData = {
 
   bookings: [
     {
-      userId: "user_demo_1",
+      userId: "user_31hF9t4hS5yL5SE3kHLzY9Z3Nb4", // Your actual user ID
       checkIn: new Date("2024-09-15"),
       checkOut: new Date("2024-09-18"), 
       numberOfGuests: 2,
@@ -219,7 +219,7 @@ const seedData = {
       paymentStatus: "PAID"
     },
     {
-      userId: "user_demo_2",
+      userId: "user_31hF9t4hS5yL5SE3kHLzY9Z3Nb4", // Your actual user ID
       checkIn: new Date("2024-10-01"),
       checkOut: new Date("2024-10-03"),
       numberOfGuests: 1,

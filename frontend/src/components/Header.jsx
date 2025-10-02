@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { SignInButton, SignedIn, SignedOut, useClerk, UserButton } from '@clerk/clerk-react';
+import { SignInButton, SignedIn, SignedOut, useClerk, UserButton, useUser } from '@clerk/clerk-react';
 import BillingProfileDialog from '@/src/components/BillingProfileDialog';
 import { Button } from '@/src/components/ui/button';
 import { Menu, X } from 'lucide-react';
+import { useGetBillingProfileQuery } from '../store/api';
+
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -13,6 +15,11 @@ export default function Header() {
   const navigate = useNavigate();
   const [billingOpen, setBillingOpen] = useState(false);
   const { signOut } = useClerk();
+  const { user, isLoaded } = useUser();
+  const { data: billingProfile, isLoading: isLoadingProfile } = useGetBillingProfileQuery(user?.id, {
+      skip: !user,
+    });
+
 
   // Track scroll only on non-home pages where header is fixed/floating
   useEffect(() => {
@@ -20,6 +27,9 @@ export default function Header() {
       setScrolled(false);
       return; // no listener needed on home since header is relative
     }
+
+
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
@@ -46,6 +56,18 @@ export default function Header() {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
   
+
+  const handleBillingOpen = () => {
+
+    if(!isLoadingProfile){
+
+      setBillingOpen(true);
+
+
+    }
+
+    
+  };
 
   return (
     <header className={headerClassName}>
@@ -100,7 +122,7 @@ export default function Header() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                       </svg>
                     }
-                    onClick={() => setBillingOpen(true)}
+                    onClick={() => handleBillingOpen()}
                   />
                   
                   {/* Built-in sign out action */}
@@ -149,7 +171,7 @@ export default function Header() {
                 </button>
                 <button 
                   className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                  onClick={() => { setIsMobileMenuOpen(false); setBillingOpen(true); }}
+                  onClick={() => { setIsMobileMenuOpen(false);  handleBillingOpen(); }}
                 >
                   Payment Profile
                 </button>
@@ -171,7 +193,7 @@ export default function Header() {
           </nav>
         </div>
       )}
-      <BillingProfileDialog open={billingOpen} onOpenChange={setBillingOpen} />
+      <BillingProfileDialog open={billingOpen} onOpenChange={setBillingOpen} data={billingProfile} />
     </header>
   );
 }

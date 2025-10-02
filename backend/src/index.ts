@@ -2,11 +2,14 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { clerkMiddleware } from "@clerk/express";
+import connectDB from "./infrastructure/database";
 import errorHandler from "./api/middleware/errorHandler";
+
+
 import HotelRouter from "./api/hotel";
 import LocationRouter from "./api/location";
-import connectDB from "./infrastructure/database";
 import BillingProfileRouter from "./api/billingProfile";
+import BookingsRouter from "./api/booking";
 
 // Load environment variables first
 dotenv.config();
@@ -24,7 +27,8 @@ app.use(clerkMiddleware());
 
 app.use("/hotels", HotelRouter);
 app.use("/locations", LocationRouter);
-app.use("/billing-profiles", BillingProfileRouter);
+app.use("/billing-profile", BillingProfileRouter);
+app.use("/bookings", BookingsRouter);
 
 app.use(errorHandler);
 
