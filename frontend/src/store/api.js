@@ -69,6 +69,14 @@ export const api = createApi({
       },
       providesTags: (_result, _error, { userId }) => [{ type: 'Bookings', id: userId }],
     }),
+    createBooking: build.mutation({
+      query: (bookingData) => ({
+        url: 'bookings',
+        method: 'POST',
+        body: bookingData,
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
   }),
 })
 
@@ -80,4 +88,5 @@ export const {
   useGetBillingProfileQuery,
   useCreateOrUpdateBillingProfileMutation,
   useGetBookingsByUserIdQuery,
+  useCreateBookingMutation,
 } = api

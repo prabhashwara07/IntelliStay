@@ -1,12 +1,111 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { Types } from 'mongoose';
 import Booking from '../infrastructure/entities/Booking';
-import { GetBookingsQueryDTO, BookingResponseDTO, BookingsResponseDTO } from '../domain/dtos/BookingDTO';
+import Hotel from '../infrastructure/entities/Hotel';
+import { CreateBookingDTO, GetBookingsQueryDTO, BookingResponseDTO, BookingsResponseDTO } from '../domain/dtos/BookingDTO';
 import { BadRequestError, NotFoundError, InternalServerError } from '../domain/errors';
 
 export const createBooking = async (req: Request, res: Response) => {
+  // Validate request body
+  const validatedData = CreateBookingDTO.safeParse(req.body);
+  if (!validatedData.success) {
+    console.error('Validation failed:', validatedData.error);
+    throw new BadRequestError('Invalid booking data');
+  }
 
+  const { userId, hotelId, roomId, checkIn, checkOut, numberOfGuests } = validatedData.data;
+
+  console.log('Creating booking with validated data:', validatedData);
+
+  // Validate ObjectId formats
+  if (!Types.ObjectId.isValid(hotelId)) {
+    throw new BadRequestError('Invalid hotel ID format');
+  }
+  if (!Types.ObjectId.isValid(roomId)) {
+    throw new BadRequestError('Invalid room ID format');
+  }
+
+  try {
+    // Find the hotel and verify it exists
+    const hotel = await Hotel.findById(hotelId).lean();
+    if (!hotel) {
+      throw new NotFoundError('Hotel not found');
+    }
+
+    // Find the specific room within the hotel
+    const room = hotel.rooms.find((r: any) => r._id.toString() === roomId);
+    if (!room) {
+      throw new NotFoundError('Room not found in the specified hotel');
+    }
+
+    // Check if room is available
+    if (!room.isAvailable) {
+      throw new BadRequestError('Room is not available for booking');
+    }
+
+    // Validate number of guests against room capacity
+    if (numberOfGuests > room.maxGuests) {
+      throw new BadRequestError(`Room can accommodate maximum ${room.maxGuests} guests, but ${numberOfGuests} requested`);
+    }
+
+    // Check for existing bookings that conflict with the requested dates
+    const conflictingBooking = await Booking.findOne({
+      roomId: new Types.ObjectId(roomId),
+      $or: [
+        // New booking starts within existing booking
+        { checkIn: { $lte: checkIn }, checkOut: { $gt: checkIn } },
+        // New booking ends within existing booking
+        { checkIn: { $lt: checkOut }, checkOut: { $gte: checkOut } },
+        // New booking completely encompasses existing booking
+        { checkIn: { $gte: checkIn }, checkOut: { $lte: checkOut } }
+      ],
+      paymentStatus: { $ne: 'FAILED' } // Don't consider failed bookings as conflicts
+    });
+
+    if (conflictingBooking) {
+      throw new BadRequestError('Room is already booked for the selected dates');
+    }
+
+    // Calculate total price (number of nights * price per night)
+    const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const totalPrice = numberOfNights * room.pricePerNight;
+
+    // Create the booking
+    const newBooking = new Booking({
+      userId,
+      hotelId: new Types.ObjectId(hotelId),
+      roomId: new Types.ObjectId(roomId),
+      checkIn,
+      checkOut,
+      numberOfGuests,
+      totalPrice,
+      paymentStatus: 'PENDING'
+    });
+
+    // Save the booking
+    const savedBooking = await newBooking.save();
+
+    console.log('Booking created successfully:', savedBooking._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Booking created successfully',
+      bookingDetails: {
+        bookingId: savedBooking._id,
+        totalNights: numberOfNights,
+        pricePerNight: room.pricePerNight,
+        totalPrice: totalPrice,
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new InternalServerError('Failed to create booking');
+  }
 }
 
 export const getBookingsByUserId = async (req: Request, res: Response) => {
@@ -26,13 +125,6 @@ export const getBookingsByUserId = async (req: Request, res: Response) => {
   // Validate that userId is provided
   if (!userId) {
     throw new BadRequestError('User ID is required');
-  }
-
-  // First, verify that the user exists in Clerk
-  try {
-    await clerkClient.users.getUser(userId);
-  } catch (error) {
-    throw new NotFoundError('User not found in system');
   }
 
   // Build filter query

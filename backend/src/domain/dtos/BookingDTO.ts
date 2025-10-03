@@ -1,5 +1,20 @@
 import { z } from 'zod';
 
+// Request DTO for creating a booking
+export const CreateBookingDTO = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  hotelId: z.string().min(1, 'Hotel ID is required'),
+  roomId: z.string().min(1, 'Room ID is required'),
+  checkIn: z.string().transform((val) => new Date(val)),
+  checkOut: z.string().transform((val) => new Date(val)),
+  numberOfGuests: z.number().min(1, 'Number of guests must be at least 1'),
+}).refine((data) => {
+  return data.checkOut > data.checkIn;
+}, {
+  message: 'Check-out date must be after check-in date',
+  path: ['checkOut'],
+});
+
 // Query parameters DTO for filtering bookings
 export const GetBookingsQueryDTO = z.object({
   userId: z.string().min(1, 'User ID is required'),
@@ -47,6 +62,7 @@ export const BookingResponseDTO = z.object({
 // Simple bookings response DTO
 export const BookingsResponseDTO = z.array(BookingResponseDTO);
 
+export type CreateBooking = z.infer<typeof CreateBookingDTO>;
 export type GetBookingsQuery = z.infer<typeof GetBookingsQueryDTO>;
 export type BookingResponse = z.infer<typeof BookingResponseDTO>;
 export type BookingsResponse = z.infer<typeof BookingsResponseDTO>;
