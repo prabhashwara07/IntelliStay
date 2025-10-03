@@ -132,7 +132,8 @@ export default function HotelView() {
         duration: 3000,
       });
 
-      const paymentHash = generateHash(result.bookingDetails.bookingId, totalPrice);
+      const formattedTotalPrice = Number(totalPrice).toFixed(2);
+      const paymentHash = generateHash(result.bookingDetails.bookingId, formattedTotalPrice);
 
       const refactoredPaymentData = {
         ...result.paymentData,

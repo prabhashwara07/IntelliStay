@@ -17,6 +17,7 @@ dotenv.config();
 const app: express.Express = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Add this for PayHere form data
 
 app.use(cors(
   {
@@ -29,6 +30,7 @@ app.use("/hotels", HotelRouter);
 app.use("/locations", LocationRouter);
 app.use("/billing-profile", BillingProfileRouter);
 app.use("/bookings", BookingsRouter);
+
 
 app.use(errorHandler);
 

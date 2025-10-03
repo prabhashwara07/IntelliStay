@@ -8,7 +8,7 @@ export interface IBooking extends Document {
   checkOut: Date;
   numberOfGuests: number;
   totalPrice: number;
-  paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED';
   createdAt: Date;
   updatedAt: Date;
 }

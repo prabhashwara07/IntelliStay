@@ -1,15 +1,18 @@
 import md5 from "crypto-js/md5";
 
 export default function generateHash(ordersId, amounts) {
-  let merchantSecret  = "MTE0Njg3MTc2MjE0NDM4MDcwNTAxMzc2MzAzODExMzEzMzMxOTc1";
-  let merchantId      = "1229354";
+  let merchantSecret  = "MzA3ODIxMDkzNzEyNDM5OTMzMDI0MTM5MzIyNzQ2MTcwMjU5MTcy";
+  let merchantId      = "1232279";
   let orderId         = ordersId;
   let amount          = amounts;
 
   let hashedSecret    = md5(merchantSecret).toString().toUpperCase();
-  let amountFormatted = parseFloat(amount)
-                          .toLocaleString("en-US", { minimumFractionDigits: 2 })
-                          .replaceAll(",", "");
+
+  // --- THIS IS THE FIX ---
+  // Use toFixed(2) to ensure two decimal places without thousand separators.
+  let amountFormatted = parseFloat(amount).toFixed(2);
+  // -----------------------
+  
   let currency        = "LKR";
 
   let hash = md5(merchantId + orderId + amountFormatted + currency + hashedSecret)

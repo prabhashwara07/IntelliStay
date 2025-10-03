@@ -8,8 +8,6 @@ import { BadRequestError, NotFoundError, InternalServerError } from '../domain/e
 import crypto from 'crypto';
 
 
-
-
 export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
   // Get userId from auth middleware
   const userId = req.auth?.userId;
@@ -104,12 +102,11 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
 
 
   
-
     const paymentData = {
       merchant_id: `${process.env.PAYHERE_MERCHANT_ID}`,
       return_url: `${process.env.FRONTEND_URL}/bookings`,
       cancel_url: `${process.env.FRONTEND_URL}/bookings`,
-      notify_url: `${process.env.BACKEND_URL}/api/bookings/payment/notify`,
+      notify_url: `${process.env.BACKEND_URL}/bookings/payment/notify`,
       first_name: "sample",
       last_name: "user",
       email: "sample@example.com",
@@ -122,8 +119,6 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       currency:  'LKR',
       amount: Number(totalPrice).toFixed(2),
       hash: "hash",
-      custom_1: userId,
-      custom_2: savedBooking._id.toString(),
     };
 
     console.log('Payment data prepared:', paymentData);
@@ -269,6 +264,135 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
 
   } catch (error) {
     console.error('Error fetching bookings:', error);
+    next(error);
+  }
+}
+
+export const verifyBooking = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    console.log('Raw request body:', req.body);
+    console.log('Request headers:', req.headers);
+
+    // Check if req.body exists
+    if (!req.body) {
+      throw new BadRequestError('Request body is missing');
+    }
+
+    // Extract PayHere POST data
+    const {
+      merchant_id,
+      order_id,
+      payhere_amount,
+      payhere_currency,
+      status_code,
+      md5sig
+    } = req.body;
+
+    console.log('PayHere verification request:', {
+      merchant_id,
+      order_id,
+      payhere_amount,
+      payhere_currency,
+      status_code,
+      md5sig
+    });
+
+    // Validate required fields
+    if (!merchant_id || !order_id || !payhere_amount || !payhere_currency || !status_code || !md5sig) {
+      throw new BadRequestError('Missing required PayHere verification data');
+    }
+
+    const merchant_secret = process.env.PAYHERE_MERCHANT_SECRET;
+    if (!merchant_secret) {
+      throw new InternalServerError('Merchant secret not configured');
+    }
+
+    // Generate local MD5 signature for verification
+    const hashedSecret = crypto.createHash('md5').update(merchant_secret).digest('hex').toUpperCase();
+    
+    const signatureString = merchant_id + order_id + payhere_amount + payhere_currency + status_code + hashedSecret;
+    const local_md5sig = crypto.createHash('md5').update(signatureString).digest('hex').toUpperCase();
+
+    console.log('Signature verification:', {
+      received_signature: md5sig,
+      calculated_signature: local_md5sig,
+      signatures_match: local_md5sig === md5sig,
+      status_code: status_code,
+      is_success: status_code == 2
+    });
+
+    // Verify signature and payment success
+    if (local_md5sig === md5sig && status_code == 2) {
+      // Payment is successful and verified
+      
+      // Find and update the booking
+      const booking = await Booking.findById(order_id);
+      if (!booking) {
+        throw new NotFoundError('Booking not found');
+      }
+
+      // Update booking payment status
+      booking.paymentStatus = 'PAID';
+      await booking.save();
+
+      console.log(`Payment verified and booking ${order_id} updated successfully`);
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Payment verified and booking updated successfully' 
+      });
+
+    } else if (local_md5sig === md5sig && status_code == 0) {
+      // Payment is pending
+      const booking = await Booking.findById(order_id);
+      if (booking) {
+        booking.paymentStatus = 'PENDING';
+        await booking.save();
+      }
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Payment is pending' 
+      });
+
+    } else if (local_md5sig === md5sig && status_code == -1) {
+      // Payment was canceled
+      const booking = await Booking.findById(order_id);
+      if (booking) {
+        booking.paymentStatus = 'CANCELLED';
+        await booking.save();
+      }
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Payment was cancelled' 
+      });
+
+    } else if (local_md5sig === md5sig && status_code == -2) {
+      // Payment failed
+      const booking = await Booking.findById(order_id);
+      if (booking) {
+        booking.paymentStatus = 'FAILED';
+        await booking.save();
+      }
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Payment failed' 
+      });
+
+    } else {
+      // Invalid signature or unknown status
+      console.error('Invalid payment verification:', {
+        signature_match: local_md5sig === md5sig,
+        status_code: status_code
+      });
+
+      throw new BadRequestError('Invalid payment verification signature or status');
+    }
+
+  } catch (error) {
+    console.error('Payment verification error:', error);
     next(error);
   }
 }
