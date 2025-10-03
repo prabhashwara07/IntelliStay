@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Request DTO for creating a booking
 export const CreateBookingDTO = z.object({
-  userId: z.string().min(1, 'User ID is required'),
+  userId: z.string().optional(),
   hotelId: z.string().min(1, 'Hotel ID is required'),
   roomId: z.string().min(1, 'Room ID is required'),
   checkIn: z.string().transform((val) => new Date(val)),

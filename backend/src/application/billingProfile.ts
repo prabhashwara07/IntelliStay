@@ -4,6 +4,7 @@ import { clerkClient } from '@clerk/clerk-sdk-node';
 import BillingProfile from '../infrastructure/entities/BillingProfile';
 import { CreateBillingProfileDTO, UpdateBillingProfileDTO, BillingProfileResponseDTO } from '../domain/dtos/BiliingProfileDTO';
 import { BadRequestError, ConflictError, InternalServerError, NotFoundError } from '../domain/errors';
+import { NextFunction } from 'express';
 
 export const createOrUpdateBillingProfile = async (req: Request, res: Response) => {
   // Validate request body using Zod DTO
@@ -107,5 +108,6 @@ export const getBillingProfileByUserId = async (req: Request, res: Response) => 
     data: validatedResponse
   });
 };
+
 
 

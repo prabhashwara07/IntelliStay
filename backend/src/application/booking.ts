@@ -1,20 +1,38 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import Booking from '../infrastructure/entities/Booking';
 import Hotel from '../infrastructure/entities/Hotel';
 import { CreateBookingDTO, GetBookingsQueryDTO, BookingResponseDTO, BookingsResponseDTO } from '../domain/dtos/BookingDTO';
 import { BadRequestError, NotFoundError, InternalServerError } from '../domain/errors';
+import crypto from 'crypto';
 
-export const createBooking = async (req: Request, res: Response) => {
-  // Validate request body
+
+
+
+export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
+  // Get userId from auth middleware
+  const userId = req.auth?.userId;
+  const auth = req.auth;
+  const billingProfile = req.billingProfile;
+
+  if (!userId) {
+    throw new BadRequestError('User authentication required');
+  }
+
+  // Verify billing profile exists (from requireBillingProfile middleware)
+  if (!req.billingProfile) {
+    throw new BadRequestError('Billing profile required');
+  }
+
+  // Validate request body (userId no longer needed in body)
   const validatedData = CreateBookingDTO.safeParse(req.body);
   if (!validatedData.success) {
     console.error('Validation failed:', validatedData.error);
     throw new BadRequestError('Invalid booking data');
   }
 
-  const { userId, hotelId, roomId, checkIn, checkOut, numberOfGuests } = validatedData.data;
+  const { hotelId, roomId, checkIn, checkOut, numberOfGuests } = validatedData.data;
 
   console.log('Creating booking with validated data:', validatedData);
 
@@ -53,27 +71,24 @@ export const createBooking = async (req: Request, res: Response) => {
     const conflictingBooking = await Booking.findOne({
       roomId: new Types.ObjectId(roomId),
       $or: [
-        // New booking starts within existing booking
         { checkIn: { $lte: checkIn }, checkOut: { $gt: checkIn } },
-        // New booking ends within existing booking
         { checkIn: { $lt: checkOut }, checkOut: { $gte: checkOut } },
-        // New booking completely encompasses existing booking
         { checkIn: { $gte: checkIn }, checkOut: { $lte: checkOut } }
       ],
-      paymentStatus: { $ne: 'FAILED' } // Don't consider failed bookings as conflicts
+      paymentStatus: { $ne: 'FAILED' }
     });
 
     if (conflictingBooking) {
       throw new BadRequestError('Room is already booked for the selected dates');
     }
 
-    // Calculate total price (number of nights * price per night)
+    // Calculate total price
     const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     const totalPrice = numberOfNights * room.pricePerNight;
 
-    // Create the booking
+    // Create the booking with userId from auth middleware
     const newBooking = new Booking({
-      userId,
+      userId, // From req.auth.userId
       hotelId: new Types.ObjectId(hotelId),
       roomId: new Types.ObjectId(roomId),
       checkIn,
@@ -83,10 +98,35 @@ export const createBooking = async (req: Request, res: Response) => {
       paymentStatus: 'PENDING'
     });
 
-    // Save the booking
-    const savedBooking = await newBooking.save();
+    const savedBooking  = await newBooking.save() as any;
 
     console.log('Booking created successfully:', savedBooking._id);
+
+
+  
+
+    const paymentData = {
+      merchant_id: `${process.env.PAYHERE_MERCHANT_ID}`,
+      return_url: `${process.env.FRONTEND_URL}/bookings`,
+      cancel_url: `${process.env.FRONTEND_URL}/bookings`,
+      notify_url: `${process.env.BACKEND_URL}/api/bookings/payment/notify`,
+      first_name: "sample",
+      last_name: "user",
+      email: "sample@example.com",
+      phone: billingProfile?.mobile,
+      address: billingProfile?.address,
+      city: billingProfile?.city,
+      country: billingProfile?.country,
+      order_id: savedBooking._id.toString(),
+      items: `${hotel.name} - Room Booking`,
+      currency:  'LKR',
+      amount: Number(totalPrice).toFixed(2),
+      hash: "hash",
+      custom_1: userId,
+      custom_2: savedBooking._id.toString(),
+    };
+
+    console.log('Payment data prepared:', paymentData);
 
     res.status(201).json({
       success: true,
@@ -96,19 +136,19 @@ export const createBooking = async (req: Request, res: Response) => {
         totalNights: numberOfNights,
         pricePerNight: room.pricePerNight,
         totalPrice: totalPrice,
-      }
+        mobile: billingProfile?.mobile,
+      },
+      paymentData: paymentData,
+      checkoutUrl: 'https://sandbox.payhere.lk/pay/checkout' // PayHere sandbox URL
     });
 
   } catch (error) {
-    console.error('Error creating booking:', error);
-    if (error instanceof BadRequestError || error instanceof NotFoundError) {
-      throw error;
-    }
-    throw new InternalServerError('Failed to create booking');
+    next(error);
   }
-}
+};
 
-export const getBookingsByUserId = async (req: Request, res: Response) => {
+
+export const getBookingsByUserId = async (req: Request, res: Response, next: NextFunction) => {
   // Validate query parameters
   const queryData = {
     userId: req.params.userId,
@@ -167,10 +207,10 @@ export const getBookingsByUserId = async (req: Request, res: Response) => {
     // Transform booking data to match DTO
     const formattedBookings = bookings.map((booking: any) => {
       const hotel = booking.hotelId;
-      
+
       // Find the specific room from hotel.rooms array using roomId
       const room = hotel.rooms?.find((r: any) => r._id.toString() === booking.roomId.toString());
-      
+
       console.log('Processing booking:', {
         bookingId: booking._id,
         hotelName: hotel.name,
@@ -178,7 +218,7 @@ export const getBookingsByUserId = async (req: Request, res: Response) => {
         roomFound: !!room,
         roomDetails: room
       });
-      
+
       return {
         id: booking._id.toString(),
         userId: booking.userId,
@@ -210,7 +250,7 @@ export const getBookingsByUserId = async (req: Request, res: Response) => {
     });
 
     // Validate each booking response
-    const validatedBookings = formattedBookings.map(booking => 
+    const validatedBookings = formattedBookings.map(booking =>
       BookingResponseDTO.parse(booking)
     );
 
@@ -229,6 +269,6 @@ export const getBookingsByUserId = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error fetching bookings:', error);
-    throw new InternalServerError('Failed to fetch bookings');
+    next(error);
   }
 }
