@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { SignInButton, SignedIn, SignedOut, useClerk, UserButton, useUser } from '@clerk/clerk-react';
-import BillingProfileDialog from '@/src/components/BillingProfileDialog';
-import { Button } from '@/src/components/ui/button';
+import BillingProfileDialog from './BillingProfileDialog';
+import { Button } from './ui/button';
 import { Menu, X } from 'lucide-react';
 import { useGetBillingProfileQuery } from '../store/api';
-
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -58,16 +57,12 @@ export default function Header() {
   
 
   const handleBillingOpen = () => {
-
     if(!isLoadingProfile){
-
       setBillingOpen(true);
-
-
     }
-
-    
   };
+
+
 
   return (
     <header className={headerClassName}>
@@ -86,13 +81,16 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-10">
-          <Link to="/contact" className={`${navLinkBase} ${isActive('/contact') ? navLinkActive : navLinkInactive}`}>
-            Contact
+          <Link to="/hotels" className={`${navLinkBase} ${isActive('/hotels') ? navLinkActive : navLinkInactive}`}>
+            Hotels
           </Link>
           <div className="flex items-center gap-4">
             <SignedIn>
               <Link to="/bookings" className={`${navLinkBase} ${isActive('/bookings') ? navLinkActive : navLinkInactive}`}>
                 Bookings
+              </Link>
+              <Link to="/contact" className={`${navLinkBase} ${isActive('/contact') ? navLinkActive : navLinkInactive}`}>
+                Contact
               </Link>
               <UserButton
                 afterSignOutUrl="/"
@@ -155,11 +153,11 @@ export default function Header() {
         <div className="md:hidden bg-gradient-to-b from-brand-primary/95 to-brand-primary/85 border-t border-white/15 rounded-b-2xl backdrop-blur">
           <nav className="px-6 py-4 space-y-4">
             <Link 
-              to="/contact" 
+              to="/hotels" 
               className="block text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Contact
+              Hotels
             </Link>
             <div className="pt-2 border-t border-white/15">
               <SignedIn>
@@ -169,6 +167,13 @@ export default function Header() {
                 >
                   Bookings
                 </button>
+                <Link 
+                  to="/contact" 
+                  className="block text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Contact
+                </Link>
                 <button 
                   className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
                   onClick={() => { setIsMobileMenuOpen(false);  handleBillingOpen(); }}

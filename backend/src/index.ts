@@ -11,6 +11,7 @@ import LocationRouter from "./api/location";
 import BillingProfileRouter from "./api/billingProfile";
 import BookingsRouter from "./api/booking";
 
+
 // Load environment variables first
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/hotels", HotelRouter);
 app.use("/locations", LocationRouter);
 app.use("/billing-profile", BillingProfileRouter);
 app.use("/bookings", BookingsRouter);
+ 
 
 
 app.use(errorHandler);

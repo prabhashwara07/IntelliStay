@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { get } from 'react-hook-form'
 
 export const api = createApi({
   reducerPath: 'api',
@@ -18,9 +19,41 @@ export const api = createApi({
   tagTypes: ['Hotels', 'BillingProfile', 'Bookings'],
   endpoints: (build) => ({
     getAllHotels: build.query({
-      query: (country) => country && country.length > 0
-        ? `hotels?country=${encodeURIComponent(country)}`
-        : 'hotels',
+      query: (filters = {}) => {
+        const params = new URLSearchParams();
+        
+        // Add all filter parameters if they exist
+        if (filters.country && filters.country.length > 0) {
+          params.append('country', filters.country);
+        }
+        if (filters.search && filters.search.length > 0) {
+          params.append('search', filters.search);
+        }
+        if (filters.minPrice) {
+          params.append('minPrice', filters.minPrice.toString());
+        }
+        if (filters.maxPrice) {
+          params.append('maxPrice', filters.maxPrice.toString());
+        }
+        if (filters.starRating && filters.starRating.length > 0) {
+          // Handle multiple star ratings
+          filters.starRating.forEach(rating => {
+            params.append('starRating', rating.toString());
+          });
+        }
+        if (filters.amenities && filters.amenities.length > 0) {
+          // Handle multiple amenities
+          filters.amenities.forEach(amenity => {
+            params.append('amenities', amenity);
+          });
+        }
+        if (filters.onlyTopRated) {
+          params.append('onlyTopRated', 'true');
+        }
+        
+        const queryString = params.toString();
+        return queryString ? `hotels?${queryString}` : 'hotels';
+      },
       providesTags: () => [{ type: 'Hotels', id: 'LIST' }],
     }),
     getHotelById: build.query({
@@ -77,6 +110,9 @@ export const api = createApi({
       }),
       invalidatesTags: ['Bookings'],
     }),
+    getResultsByAiSearch: build.query({
+      query: (search) => `hotels/search/ai?query=${encodeURIComponent(search)}`
+    }),
   }),
 })
 
@@ -89,4 +125,6 @@ export const {
   useCreateOrUpdateBillingProfileMutation,
   useGetBookingsByUserIdQuery,
   useCreateBookingMutation,
+  useGetResultsByAiSearchQuery,
+  useLazyGetResultsByAiSearchQuery
 } = api

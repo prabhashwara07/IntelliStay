@@ -1,48 +1,55 @@
-import React from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Autoplay } from 'swiper/modules';
-import { Search, Sparkles } from 'lucide-react';
-import { Input } from '@/src/components/ui/input';
-import { Button } from '@/src/components/ui/button';
+import React, { useState } from "react";
+import { Sparkles, Search, Mic } from "lucide-react";
+import { Input } from "./ui/input";
+import { useGetResultsByAiSearchQuery, useLazyGetResultsByAiSearchQuery } from "../store/api";
+import { setSearchQuery, selectCurrentQuery } from "../store/features/searchSlice";
+import { useDispatch, useSelector } from "react-redux";
 
-// Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
+export default function HomeHero({ handleSearch: onSearch, handleKeyPress: onKeyPress , isLoading}) {
+  const dispatch = useDispatch();
+  const searchQuery = useSelector(selectCurrentQuery);
 
-const hotelImages = [
-  {
-    url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=400&fit=crop',
-    title: 'Luxury Resort'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=400&fit=crop',
-    title: 'City Hotel'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&h=400&fit=crop',
-    title: 'Beach Resort'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&h=400&fit=crop',
-    title: 'Mountain Lodge'
-  }
-];
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    // Call the parent's handleSearch function
+    if (onSearch) {
+      onSearch();
+    }
+  };
 
-export default function HomeHero() {
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+    // Also call parent's handleKeyPress if provided
+    if (onKeyPress) {
+      onKeyPress(e);
+    }
+  };
+
+  const handleQueryChange = (e) => {
+    dispatch(setSearchQuery(e.target.value));
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    dispatch(setSearchQuery(suggestion));
+  };
+
+
+
   return (
     <section className="relative min-h-[70vh] md:min-h-[75vh] my-6 mx-6 md:mx-10 flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/15 shadow-2xl bg-black/80">
       {/* Background Image with Blur */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat filter blur-md scale-105"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=400&fit=crop')`
+          backgroundImage: `url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=400&fit=crop')`,
         }}
       ></div>
-      
+
       {/* Stronger Dark Overlay for better text visibility */}
       <div className="absolute inset-0 bg-black/65 backdrop-brightness-75"></div>
-      
+
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-12 md:pt-8">
         {/* Hero Title */}
@@ -54,28 +61,68 @@ export default function HomeHero() {
             </span>
           </h1>
           <p className="text-xl text-white/80 max-w-2xl mx-auto leading-relaxed drop-shadow-md">
-            Simply describe what you're looking for in plain English. Our AI will understand your needs and find the perfect hotel for you.
+            Discover amazing hotels from around the world. Browse our curated collection of luxury accommodations and find your perfect getaway.
           </p>
         </div>
 
-        {/* AI Search Input */}
-        <div className="max-w-2xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input
-              type="text"
-              placeholder="e.g., 'I need a pet-friendly hotel in Paris near the Eiffel Tower with a pool for 3 nights'"
-              className="w-full pl-5 pr-24 py-6 text-lg h-auto border focus:border-brand-primary focus:ring-brand-primary bg-white/95 backdrop-blur-sm"
-            />
-            <Button 
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-            >
-              Search
-            </Button>
-          </div>
+        {/* Natural Language Search */}
+        <div className="mb-12 max-w-2xl mx-auto">
+          
+            <div className="relative bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 group-focus-within:bg-white/15 group-focus-within:border-white/30">
+              <div className="flex items-center p-2">
+                <div className="flex-shrink-0 pl-4">
+                  <Search className="h-5 w-5 text-white/70" />
+                </div>
+                <Input
+                  type="text"
+                  placeholder="Ask me anything... 'Find a beachfront hotel in Miami with spa' or 'Romantic getaway under $200'"
+                  value={searchQuery}
+                  onChange={handleQueryChange}
+                  onKeyPress={handleKeyPress}
+                  className="flex-1 bg-transparent border-0 text-white placeholder:text-white/60 text-lg px-4 py-4 focus-visible:ring-0 focus-visible:border-0 focus-visible:outline-none shadow-none"
+                />
+                <div className="flex items-center gap-2 pr-2">
+                  <button
+                    type="button"
+                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
+                    title="Voice search"
+                  >
+                    
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    disabled={!searchQuery.trim() || isLoading}
+                    className="bg-brand-primary hover:bg-brand-primary/90 disabled:bg-brand-primary/50 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {isLoading ? "Searching..." : "Search"}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Search suggestions */}
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {[
+                "Luxury hotels in Paris",
+                "Pet-friendly resorts",
+                "Hotels with pools near me",
+                "Romantic weekend getaway"
+              ].map((suggestion, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="px-4 py-2 text-sm text-white/80 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hover:border-white/30 transition-all duration-200 backdrop-blur-sm"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           
         </div>
-
+        
         {/* Trust indicators using theme colors */}
         <div className="mt-16 flex justify-center items-center gap-8 text-sm text-white/80">
           <div className="flex items-center gap-2">
@@ -84,7 +131,7 @@ export default function HomeHero() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-brand-accent rounded-full"></div>
-            <span>AI-powered search</span>
+            <span>Premium accommodations</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-brand-accent rounded-full"></div>
