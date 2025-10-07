@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true })); // Add this for PayHere form da
 
 app.use(cors(
   {
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL || "https://intelli-stay.vercel.app/",
   }
 ));
 app.use(clerkMiddleware());
