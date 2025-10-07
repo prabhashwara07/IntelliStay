@@ -1,0 +1,1 @@
+{"version":3,"file":"database.js","sourceRoot":"","sources":["../../../src/domain/errors/database.ts"],"names":[],"mappings":";;;AAAA,MAAa,aAAc,SAAQ,KAAK;IAIpC,YAAY,UAAkB,gBAAgB,EAAE,SAAkB;QAC9D,KAAK,CAAC,OAAO,CAAC,CAAC;QACf,IAAI,CAAC,IAAI,GAAG,eAAe,CAAC;QAC5B,IAAI,CAAC,IAAI,GAAG,GAAG,CAAC;QAChB,IAAI,CAAC,SAAS,GAAG,SAAS,CAAC;IAC/B,CAAC;CACJ;AAVD,sCAUC"}
