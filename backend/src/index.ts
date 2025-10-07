@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true })); // Add this for PayHere form da
 
 app.use(cors(
   {
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
   }
 ));
 app.use(clerkMiddleware());
