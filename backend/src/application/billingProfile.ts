@@ -1,25 +1,15 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { clerkClient, getAuth } from '@clerk/express';
 import BillingProfile from '../infrastructure/entities/BillingProfile';
 import { CreateBillingProfileDTO, UpdateBillingProfileDTO, BillingProfileResponseDTO } from '../domain/dtos/BiliingProfileDTO';
 import { BadRequestError, ConflictError, InternalServerError, NotFoundError } from '../domain/errors';
 import { NextFunction } from 'express';
 
 export const createOrUpdateBillingProfile = async (req: Request, res: Response) => {
-  // Validate request body using Zod DTO
   const validatedData = CreateBillingProfileDTO.parse(req.body);
 
-  console.log('Validated Data:', validatedData);
 
-  // First, verify that the user exists in Clerk
-  try {
-    await clerkClient.users.getUser(validatedData.userId);
-  } catch (error) {
-    throw new NotFoundError('User not found in system');
-  }
-
-  // Check if billing profile already exists for this user
   const existingProfile = await BillingProfile.findOne({ 
     userId: validatedData.userId,
     isActive: true 
@@ -29,7 +19,7 @@ export const createOrUpdateBillingProfile = async (req: Request, res: Response) 
   let isUpdate = false;
 
   if (existingProfile) {
-    // Update existing profile
+    
     savedProfile = await BillingProfile.findOneAndUpdate(
       { userId: validatedData.userId, isActive: true },
       { ...validatedData },
@@ -37,18 +27,16 @@ export const createOrUpdateBillingProfile = async (req: Request, res: Response) 
     );
     isUpdate = true;
   } else {
-    // Create new profile
+    
     const newBillingProfile = new BillingProfile(validatedData);
     savedProfile = await newBillingProfile.save();
   }
 
-  // Convert to JSON to get virtuals and format properly
   const profileJson = savedProfile!.toJSON();
   
-  // Format the response data to match DTO expectations
   const responseData = {
     mobile: profileJson.mobile,
-    address: profileJson.address,           // ✅ Include raw address
+    address: profileJson.address,           
     city: profileJson.city,
     country: profileJson.country,
     currency: profileJson.currency,
@@ -64,37 +52,23 @@ export const createOrUpdateBillingProfile = async (req: Request, res: Response) 
 };
 
 export const getBillingProfileByUserId = async (req: Request, res: Response) => {
-  const { userId } = req.params;
-
-  // Validate that userId is provided
-  if (!userId) {
-    throw new BadRequestError('User ID is required');
-  }
-
-  // First, verify that the user exists in Clerk
-  try {
-    await clerkClient.users.getUser(userId);
-  } catch (error) {
-    throw new NotFoundError('User not found in system');
-  }
+  const userId = getAuth(req).userId;
 
   // Find the billing profile
   const billingProfile = await BillingProfile.findOne({ 
     userId,
-    isActive: true 
+    isActive: true
   });
 
   if (!billingProfile) {
     throw new NotFoundError('Billing profile not found for this user');
   }
 
-  // Convert to JSON to get virtuals and format properly
   const profileJson = billingProfile.toJSON();
   
-  // Format the response data to match DTO expectations
   const responseData = {
     mobile: profileJson.mobile,
-    address: profileJson.address,           // ✅ Include raw address
+    address: profileJson.address,           
     city: profileJson.city,
     country: profileJson.country,
     currency: profileJson.currency,

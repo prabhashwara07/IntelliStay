@@ -10,6 +10,7 @@ import HotelRouter from "./api/hotel";
 import LocationRouter from "./api/location";
 import BillingProfileRouter from "./api/billingProfile";
 import BookingsRouter from "./api/booking";
+import AdminRouter from "./api/admin";
 
 
 // Load environment variables first
@@ -31,6 +32,7 @@ app.use("/hotels", HotelRouter);
 app.use("/locations", LocationRouter);
 app.use("/billing-profile", BillingProfileRouter);
 app.use("/bookings", BookingsRouter);
+app.use("/admin", AdminRouter);
  
 
 

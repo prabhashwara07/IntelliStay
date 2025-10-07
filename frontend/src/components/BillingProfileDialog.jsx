@@ -37,6 +37,7 @@ const billingSchema = z.object({
 
 export default function BillingProfileDialog({ open, onOpenChange }) {
   const { user, isLoaded } = useUser();
+  const shouldSkipQuery = !user || !open;
   
   const { 
     data: billingProfile, 
@@ -48,7 +49,7 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
   } = useGetBillingProfileQuery(
     user?.id,
     { 
-      skip: !user || !open,
+      skip: shouldSkipQuery,
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
     }
@@ -80,7 +81,14 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
   // Refetch data when dialog opens
   useEffect(() => {
     if (open && user) {
-      refetch();
+      console.log('[BillingProfileDialog] Refetching billing profile...', { userId: user.id, open });
+      refetch()
+        .then((res) => {
+          console.log('[BillingProfileDialog] Refetch result:', res);
+        })
+        .catch((err) => {
+          console.error('[BillingProfileDialog] Refetch error:', err);
+        });
     }
   }, [open, user, refetch]);
 
@@ -89,6 +97,7 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
     if (open && billingProfile?.data && user && !isLoadingProfile) {
       // Access the nested data property
       const profileData = billingProfile.data;
+      console.log('[BillingProfileDialog] Populating form with profileData:', profileData);
       
       const formData = {
         mobile: profileData.mobile || '',
@@ -111,6 +120,33 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
       // form.reset(formData);
     }
   }, [open, billingProfile, user, isLoadingProfile, form]);
+
+  // Debug: Log high-level query state changes
+  useEffect(() => {
+    console.log('[BillingProfileDialog] State:', {
+      open,
+      isLoaded,
+      userId: user?.id,
+      shouldSkipQuery,
+      isLoadingProfile,
+      isFetching,
+      isQuerySuccess,
+    });
+  }, [open, isLoaded, user, shouldSkipQuery, isLoadingProfile, isFetching, isQuerySuccess]);
+
+  // Debug: Log query error details
+  useEffect(() => {
+    if (queryError) {
+      console.error('[BillingProfileDialog] Query error encountered:', queryError);
+    }
+  }, [queryError]);
+
+  // Debug: Log payload whenever it changes
+  useEffect(() => {
+    if (billingProfile) {
+      console.log('[BillingProfileDialog] billingProfile payload changed:', billingProfile);
+    }
+  }, [billingProfile]);
 
   // Reset mutation states when dialog closes
   useEffect(() => {
@@ -189,7 +225,7 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
           <div className="py-16 text-center text-muted-foreground">
             Please sign in to manage billing.
           </div>
-        ) : queryError ? (
+        ) : (queryError && queryError.status !== 404) ? (
           <div className="py-16 text-center text-red-500">
             Error loading billing profile. Please try again.
           </div>

@@ -63,6 +63,7 @@ export default function Hotels() {
 
   // Get countries for location dropdown
   const { data: countries = [], isLoading: isLoadingCountries } = useGetCountriesQuery();
+  const countriesList = Array.isArray(countries) ? countries : [];
 
   // Build filters object for API
   const filters = useMemo(() => {
@@ -232,7 +233,7 @@ export default function Hotels() {
                       className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                     >
                       <option value="">All Locations</option>
-                      {!isLoadingCountries && countries?.map((country) => (
+                      {!isLoadingCountries && countriesList.map((country) => (
                         <option key={country} value={country}>{country}</option>
                       ))}
                     </select>

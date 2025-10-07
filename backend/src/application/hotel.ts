@@ -6,6 +6,16 @@ import { fetchHotelDetailsForEmbedding, buildHotelEmbeddingText } from "./utils/
 import { generateEmbedding } from "./utils/embeddings";
 import { BadRequestError, ValidationError } from "../domain/errors";
 import { SearchHotelDTO } from "../domain/dtos/SearchHotelDTO";
+import { CreateRoomDTO } from "../domain/dtos/RoomDTO";
+import { getAuth } from "@clerk/express";
+
+// Extend Request type to include user from Clerk
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    [key: string]: any;
+  };
+}
 
 
 export const getAllHotels = async (req: Request, res: Response, next: NextFunction) => {
@@ -28,7 +38,10 @@ export const getAllHotels = async (req: Request, res: Response, next: NextFuncti
       onlyTopRated?: string;
     };
 
-    let query: any = {};
+    let query: any = {
+      status: 'approved',
+      rooms: { $exists: true, $ne: [] }
+    };
     let populateOptions = 'location';
 
     // Build the MongoDB query based on filters
@@ -141,15 +154,19 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
   try {
     const { id } = req.params as { id: string };
 
-    // Validate ObjectId
     if (!Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid hotel ID format" });
     }
 
     const [hotel] = await Hotel.aggregate([
-      { $match: { _id: new Types.ObjectId(id) } },
+      { 
+        $match: { 
+          _id: new Types.ObjectId(id),
+          status: 'approved',
+          rooms: { $exists: true, $ne: [] }
+        }
+      },
       
-      // Lookup location details
       {
         $lookup: {
           from: "locations",
@@ -160,7 +177,6 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
       },
       { $unwind: { path: "$locationDetails", preserveNullAndEmptyArrays: true } },
       
-      // Lookup and populate reviews with user details
       {
         $lookup: {
           from: "reviews",
@@ -170,87 +186,6 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
         }
       },
       
-      // Calculate detailed room and pricing statistics
-      {
-        $addFields: {
-          totalReviews: { $size: "$reviewDetails" },
-          
-          // Calculate price range from rooms
-          priceRange: {
-            minPrice: { $min: "$rooms.pricePerNight" },
-            maxPrice: { $max: "$rooms.pricePerNight" }
-          },
-          
-          // Separate available and unavailable rooms
-          availableRooms: {
-            $filter: {
-              input: "$rooms",
-              cond: { $eq: ["$$this.isAvailable", true] }
-            }
-          },
-          unavailableRooms: {
-            $filter: {
-              input: "$rooms",
-              cond: { $eq: ["$$this.isAvailable", false] }
-            }
-          },
-          
-          // Group rooms by type for better organization
-          roomsByType: {
-            $reduce: {
-              input: "$rooms",
-              initialValue: {},
-              in: {
-                $mergeObjects: [
-                  "$$value",
-                  {
-                    $switch: {
-                      branches: [
-                        {
-                          case: { $eq: ["$$this.roomType", "Single"] },
-                          then: {
-                            Single: {
-                              $concatArrays: [
-                                { $ifNull: ["$$value.Single", []] },
-                                ["$$this"]
-                              ]
-                            }
-                          }
-                        },
-                        {
-                          case: { $eq: ["$$this.roomType", "Double"] },
-                          then: {
-                            Double: {
-                              $concatArrays: [
-                                { $ifNull: ["$$value.Double", []] },
-                                ["$$this"]
-                              ]
-                            }
-                          }
-                        },
-                        {
-                          case: { $eq: ["$$this.roomType", "Suite"] },
-                          then: {
-                            Suite: {
-                              $concatArrays: [
-                                { $ifNull: ["$$value.Suite", []] },
-                                ["$$this"]
-                              ]
-                            }
-                          }
-                        }
-                      ],
-                      default: "$$value"
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      
-      // Final projection with all hotel details
       {
         $project: {
           _id: 1,
@@ -259,7 +194,6 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
           imageUrls: 1,
           amenities: 1,
           
-          // Location information
           location: {
             _id: "$locationDetails._id",
             city: "$locationDetails.city",
@@ -267,24 +201,19 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
             coordinates: "$locationDetails.coordinates"
           },
           
-          // Room information with detailed breakdown
-          rooms: "$rooms",
-          availableRooms: 1,
-          unavailableRooms: 1,
-          roomsByType: 1,
+          rooms: 1,
           totalRooms: { $size: "$rooms" },
-          availableRoomsCount: { $size: "$availableRooms" },
           
-          // Pricing information (using stored values + calculated range)
-          priceRange: 1,
-          priceStartingFrom: 1,  // Direct from stored field
+          priceRange: {
+            minPrice: { $min: "$rooms.pricePerNight" },
+            maxPrice: { $max: "$rooms.pricePerNight" }
+          },
+          priceStartingFrom: 1,
           
-          // Rating information (using stored values)
-          starRating: 1,         // Direct from stored field
-          averageRating: 1,      // Direct from stored field
-          totalReviews: 1,
+          starRating: 1,
+          averageRating: 1,
+          totalReviews: { $size: "$reviewDetails" },
           
-          // Reviews with detailed information
           reviews: {
             $map: {
               input: "$reviewDetails",
@@ -299,7 +228,6 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
             }
           },
           
-          // Metadata
           createdAt: 1,
           updatedAt: 1
         }
@@ -339,10 +267,80 @@ export const generateHotelEmbedding = async (req: Request, res: Response, next: 
   }
 };
 
-export const createHotel = async (req: Request, res: Response, next: NextFunction) => {
 
-  
 
+export const createHotel = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { 
+      hotelName, 
+      description, 
+      location: locationString, 
+      amenities, 
+      imageUrls 
+    } = req.body;
+
+    const userId = getAuth(req).userId;
+
+    if (!hotelName || !description || !locationString || !amenities) {
+      throw new ValidationError("Hotel name, description, location, and amenities are required");
+    }
+
+    if (!Array.isArray(amenities) || amenities.length === 0) {
+      throw new ValidationError("At least one amenity must be selected");
+    }
+
+    if (!Array.isArray(imageUrls) || imageUrls.length === 0 || imageUrls.length > 3) {
+      throw new ValidationError("Between 1-3 hotel images are required");
+    }
+
+    const locationParts = locationString.split(',').map((part: string) => part.trim());
+    if (locationParts.length !== 2) {
+      throw new ValidationError("Location must be in format: 'City, Country'");
+    }
+
+    const [city, country] = locationParts;
+
+    let locationDoc = await Location.findOne({ 
+      city: { $regex: new RegExp(`^${city}$`, 'i') },
+      country: { $regex: new RegExp(`^${country}$`, 'i') }
+    });
+
+    if (!locationDoc) {
+      locationDoc = new Location({
+        city,
+        country,
+      });
+      await locationDoc.save();
+    }
+
+    const newHotel = new Hotel({
+      name: hotelName.trim(),
+      description: description.trim(),
+      location: locationDoc._id,
+      imageUrls: imageUrls.filter((url: string) => url && url.trim()), // Remove empty URLs
+      amenities: amenities,
+      
+      rooms: [],
+      reviews: [],
+      priceStartingFrom: 5000,
+      starRating: 0,
+      averageRating: 0,
+      
+      status: 'pending',
+      ownerId: userId,
+      submittedAt: new Date()
+    });
+
+    await newHotel.save();
+    
+    res.status(201).json({
+      success: true,
+      message: "Hotel submitted successfully! It will be reviewed within 24 hours."
+    });
+
+  } catch (error) {
+    next(error);
+  }
 }
 
 export const getAllHotelsBySearchQuery = async (
@@ -367,13 +365,12 @@ export const getAllHotelsBySearchQuery = async (
           queryVector: queryEmbedding,
           numCandidates: 100,  // Increased for better results
           limit: 8,           // Return more results
-          // Optional: Add filters if needed
-          // filter: {
-          //   averageRating: { $gte: 4.0 },
-          //   priceStartingFrom: { $lte: 10000 }
-          // }
+          
         },
       },
+      // Ensure hotels have at least one room (array non-empty) after vector search
+      { $match: { rooms: { $exists: true, $ne: [] } } },
+      { $match: { status: { $eq: "approved" } } },
       // Lookup location details
       {
         $lookup: {
@@ -438,6 +435,78 @@ export const getAllHotelsBySearchQuery = async (
       data: hotels
     });
   } catch (error) {
+    console.error('Error in getAllHotelsBySearchQuery:', error);
     next(error);
   }
 };
+
+// List hotels owned by the authenticated user (including pending/approved)
+export const getOwnerHotels = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    
+    const userId = getAuth(req).userId;
+    
+    const hotels = await Hotel.find({ ownerId: userId }).select('_id name status').lean();
+    res.status(200).json({ success: true, data: hotels });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create a room under a hotel (owner only)
+export const createRoom = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = getAuth(req).userId;
+   
+
+    const parsed = CreateRoomDTO.safeParse({ ...req.body, hotelId: req.params.id });
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.message);
+    }
+    const { hotelId, roomNumber, roomType, pricePerNight, maxGuests, isAvailable } = parsed.data;
+
+    if (!Types.ObjectId.isValid(hotelId)) {
+      throw new BadRequestError('Invalid hotel ID');
+    }
+
+    const hotel = await Hotel.findById(hotelId);
+    if (!hotel) {
+      return res.status(404).json({ message: 'Hotel not found' });
+    }
+
+    if (hotel.ownerId !== userId) {
+      return res.status(403).json({ message: 'You do not have permission to modify this hotel' });
+    }
+
+    const exists = hotel.rooms?.some((r: any) => r.roomNumber === roomNumber);
+    if (exists) {
+      throw new ValidationError('A room with this number already exists for this hotel');
+    }
+
+    hotel.rooms.push({ roomNumber, roomType, pricePerNight, maxGuests, isAvailable: isAvailable ?? true } as any);
+
+    
+    const allPrices = (hotel.rooms || []).map((r: any) => r.pricePerNight);
+    const minPrice = Math.min(...allPrices);
+    hotel.priceStartingFrom = isFinite(minPrice) ? minPrice : hotel.priceStartingFrom;
+
+    await hotel.save();
+
+    
+    try {
+      const details = await fetchHotelDetailsForEmbedding(hotelId);
+      if (details) {
+        const text = buildHotelEmbeddingText(details);
+        const embedding = await generateEmbedding(text);
+        await Hotel.updateOne({ _id: new Types.ObjectId(hotelId) }, { $set: { embedding } });
+      }
+    } catch (embedErr) {
+      console.warn('Embedding generation failed after room creation:', embedErr);
+    }
+
+    res.status(201).json({ success: true, message: 'Room added successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+

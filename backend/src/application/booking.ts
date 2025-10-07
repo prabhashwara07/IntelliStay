@@ -6,35 +6,24 @@ import Hotel from '../infrastructure/entities/Hotel';
 import { CreateBookingDTO, GetBookingsQueryDTO, BookingResponseDTO, BookingsResponseDTO } from '../domain/dtos/BookingDTO';
 import { BadRequestError, NotFoundError, InternalServerError } from '../domain/errors';
 import crypto from 'crypto';
-
+import { clerkClient, getAuth } from '@clerk/express';
+import generateHash from './utils/payhere';
 
 export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
-  // Get userId from auth middleware
-  const userId = req.auth?.userId;
-  const auth = req.auth;
+  
+  const userId = getAuth(req).userId;
   const billingProfile = req.billingProfile;
 
-  if (!userId) {
-    throw new BadRequestError('User authentication required');
-  }
-
-  // Verify billing profile exists (from requireBillingProfile middleware)
-  if (!req.billingProfile) {
-    throw new BadRequestError('Billing profile required');
-  }
-
-  // Validate request body (userId no longer needed in body)
+  
   const validatedData = CreateBookingDTO.safeParse(req.body);
   if (!validatedData.success) {
-    console.error('Validation failed:', validatedData.error);
     throw new BadRequestError('Invalid booking data');
   }
 
   const { hotelId, roomId, checkIn, checkOut, numberOfGuests } = validatedData.data;
 
-  console.log('Creating booking with validated data:', validatedData);
 
-  // Validate ObjectId formats
+  
   if (!Types.ObjectId.isValid(hotelId)) {
     throw new BadRequestError('Invalid hotel ID format');
   }
@@ -98,18 +87,28 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
 
     const savedBooking  = await newBooking.save() as any;
 
-    console.log('Booking created successfully:', savedBooking._id);
-
-
+    let firstName ;
+    let lastName ;
+    let email ;
+    
+    try {
+      const user = await clerkClient.users.getUser(userId!);
+      firstName = user.firstName;
+      lastName = user.lastName;
+      email = user.primaryEmailAddress?.emailAddress;
+      
+    } catch (error) {
+      throw new InternalServerError('Failed to fetch user');
+    }
   
     const paymentData = {
       merchant_id: `${process.env.PAYHERE_MERCHANT_ID}`,
       return_url: `${process.env.FRONTEND_URL}/bookings`,
       cancel_url: `${process.env.FRONTEND_URL}/bookings`,
       notify_url: `${process.env.BACKEND_URL}/bookings/payment/notify`,
-      first_name: "sample",
-      last_name: "user",
-      email: "sample@example.com",
+      first_name: firstName,
+      last_name: lastName,
+      email: email,
       phone: billingProfile?.mobile,
       address: billingProfile?.address,
       city: billingProfile?.city,
@@ -118,7 +117,7 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       items: `${hotel.name} - Room Booking`,
       currency:  'LKR',
       amount: Number(totalPrice).toFixed(2),
-      hash: "hash",
+      hash: generateHash(savedBooking._id.toString(), Number(totalPrice).toFixed(2)),
     };
 
     console.log('Payment data prepared:', paymentData);
@@ -155,17 +154,11 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
   const validatedQuery = GetBookingsQueryDTO.parse(queryData);
   const { userId, paymentStatus, startDate, endDate } = validatedQuery;
 
-  console.log('Validated Query:', validatedQuery);
 
-  // Validate that userId is provided
-  if (!userId) {
-    throw new BadRequestError('User ID is required');
-  }
-
-  // Build filter query
+  
   const filter: any = { userId };
 
-  // Add payment status filter if provided
+  
   if (paymentStatus) {
     filter.paymentStatus = paymentStatus;
   }
@@ -181,10 +174,8 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
     }
   }
 
-  console.log('Filter applied:', filter);
 
   try {
-    // Fetch all bookings that match the filter
     const bookings = await Booking.find(filter)
       .populate({
         path: 'hotelId',
@@ -194,12 +185,10 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
           select: 'city country'
         }
       })
-      .sort({ createdAt: -1 }) // Most recent first
+      .sort({ createdAt: -1 })
       .lean(); // Use lean() for better performance
 
-    console.log('Raw booking data:', JSON.stringify(bookings[0], null, 2));
 
-    // Transform booking data to match DTO
     const formattedBookings = bookings.map((booking: any) => {
       const hotel = booking.hotelId;
 
@@ -393,6 +382,95 @@ export const verifyBooking = async (req: Request, res: Response, next: NextFunct
 
   } catch (error) {
     console.error('Payment verification error:', error);
+    next(error);
+  }
+}
+
+// Fetch bookings for hotels owned by the authenticated owner
+export const getBookingsForOwner = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = getAuth(req).userId;
+    
+
+    const { paymentStatus, startDate, endDate, hotelId } = req.query as {
+      paymentStatus?: string;
+      startDate?: string;
+      endDate?: string;
+      hotelId?: string;
+    };
+
+    // Find hotels owned by this user (optionally filter by a specific hotel)
+    const hotelFilter: any = { ownerId: userId };
+    if (hotelId) {
+      if (!Types.ObjectId.isValid(hotelId)) {
+        throw new BadRequestError('Invalid hotel ID');
+      }
+      hotelFilter._id = new Types.ObjectId(hotelId);
+    }
+    const ownerHotels = await Hotel.find(hotelFilter).select('_id').lean();
+    const ownerHotelIds = ownerHotels.map(h => h._id);
+
+    // If owner has no hotels, return empty
+    if (ownerHotelIds.length === 0) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    // Build booking filter
+    const filter: any = { hotelId: { $in: ownerHotelIds } };
+    if (paymentStatus && ['PENDING', 'PAID', 'FAILED', 'CANCELLED'].includes(paymentStatus)) {
+      filter.paymentStatus = paymentStatus;
+    }
+    if (startDate || endDate) {
+      filter.checkIn = {};
+      if (startDate) filter.checkIn.$gte = new Date(startDate);
+      if (endDate) filter.checkIn.$lte = new Date(endDate);
+    }
+
+    const bookings = await Booking.find(filter)
+      .populate({
+        path: 'hotelId',
+        select: 'name imageUrls location address rooms',
+        populate: { path: 'location', select: 'city country' }
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formatted = bookings.map((booking: any) => {
+      const hotel = booking.hotelId;
+      const room = hotel.rooms?.find((r: any) => r._id.toString() === booking.roomId.toString());
+      return {
+        id: booking._id.toString(),
+        userId: booking.userId,
+        hotel: {
+          id: hotel._id.toString(),
+          name: hotel.name || 'Unknown Hotel',
+          imageUrls: hotel.imageUrls || [],
+          location: hotel.location && hotel.location.city && hotel.location.country ? {
+            city: hotel.location.city,
+            country: hotel.location.country,
+          } : undefined,
+          address: hotel.address || undefined,
+        },
+        room: room ? {
+          id: room._id.toString(),
+          roomNumber: room.roomNumber,
+          roomType: room.roomType,
+          pricePerNight: room.pricePerNight,
+          maxGuests: room.maxGuests,
+        } : null,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        numberOfGuests: booking.numberOfGuests,
+        totalPrice: booking.totalPrice,
+        paymentStatus: booking.paymentStatus,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt,
+      };
+    });
+
+    const validated = BookingsResponseDTO.parse(formatted);
+    res.status(200).json({ success: true, data: validated });
+  } catch (error) {
     next(error);
   }
 }

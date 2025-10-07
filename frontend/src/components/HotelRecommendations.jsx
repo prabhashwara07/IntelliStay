@@ -23,6 +23,7 @@ export default function HotelRecommendations() {
   
   const { data: hotelsResponse, isLoading, isError, error, isFetching } = useGetAllHotelsQuery({ country });
   const { data: countries = [], isLoading: isLoadingCountries } = useGetCountriesQuery();
+  const countriesList = Array.isArray(countries) ? countries : [];
   
   // Extract hotels from the new response format
   const hotels = hotelsResponse?.data || [];
@@ -107,7 +108,7 @@ export default function HotelRecommendations() {
                 className="h-9 rounded-md border border-input bg-background px-3 pr-8 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="">All</option>
-                {!isLoadingCountries && countries?.map((c) => (
+                {!isLoadingCountries && countriesList.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

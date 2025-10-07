@@ -16,8 +16,23 @@ export const api = createApi({
       return headers
     },
   }),
-  tagTypes: ['Hotels', 'BillingProfile', 'Bookings'],
+  tagTypes: ['Hotels', 'BillingProfile', 'Bookings', 'Admin'],
   endpoints: (build) => ({
+    getOwnerHotels: build.query({
+      query: () => 'hotels/owner/my-hotels',
+      providesTags: () => [{ type: 'Hotels', id: 'OWNER_LIST' }],
+    }),
+    createRoom: build.mutation({
+      query: ({ hotelId, room }) => ({
+        url: `hotels/${hotelId}/rooms`,
+        method: 'POST',
+        body: room,
+      }),
+      invalidatesTags: (_res, _err, { hotelId }) => [
+        { type: 'Hotels', id: 'OWNER_LIST' },
+        { type: 'Hotels', id: hotelId },
+      ],
+    }),
     getAllHotels: build.query({
       query: (filters = {}) => {
         const params = new URLSearchParams();
@@ -102,6 +117,18 @@ export const api = createApi({
       },
       providesTags: (_result, _error, { userId }) => [{ type: 'Bookings', id: userId }],
     }),
+    getOwnerBookings: build.query({
+      query: ({ paymentStatus, startDate, endDate, hotelId } = {}) => {
+        const params = new URLSearchParams();
+        if (paymentStatus && paymentStatus !== 'all') params.append('paymentStatus', paymentStatus);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (hotelId) params.append('hotelId', hotelId);
+        const qs = params.toString();
+        return qs ? `bookings/owner?${qs}` : 'bookings/owner';
+      },
+      providesTags: () => [{ type: 'Bookings', id: 'OWNER' }],
+    }),
     createBooking: build.mutation({
       query: (bookingData) => ({
         url: 'bookings',
@@ -113,6 +140,41 @@ export const api = createApi({
     getResultsByAiSearch: build.query({
       query: (search) => `hotels/search/ai?query=${encodeURIComponent(search)}`
     }),
+    // removed owner metrics endpoint as dashboard is removed
+    createHotel: build.mutation({
+      query: (hotelData) => ({
+        url: '/hotels/createhotel',
+        method: 'POST',
+        body: hotelData,
+      }),
+      // Invalidate hotels cache after successful creation
+      invalidatesTags: ['Hotel'],
+    }),
+    // Admin endpoints
+    getHotelRequests: build.query({
+      query: () => 'admin/hotel-requests',
+      // Disable caching for this endpoint
+      keepUnusedDataFor: 0,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }),
+    approveHotelRequest: build.mutation({
+      query: (requestId) => ({
+        url: `admin/approve/${requestId}`,
+        method: 'PUT',
+      }),
+      // No tag invalidation needed when caching is disabled
+    }),
+    rejectHotelRequest: build.mutation({
+      query: ({ requestId, reason }) => ({
+        url: `admin/reject/${requestId}`,
+        method: 'PUT',
+        body: { reason },
+      }),
+      // No tag invalidation needed when caching is disabled
+    }),
+    // analytics removed
   }),
 })
 
@@ -124,7 +186,15 @@ export const {
   useGetBillingProfileQuery,
   useCreateOrUpdateBillingProfileMutation,
   useGetBookingsByUserIdQuery,
+  useGetOwnerBookingsQuery,
   useCreateBookingMutation,
   useGetResultsByAiSearchQuery,
-  useLazyGetResultsByAiSearchQuery
+  useLazyGetResultsByAiSearchQuery,
+  useCreateHotelMutation,
+  useGetOwnerHotelsQuery,
+  useCreateRoomMutation,
+  // Admin hooks
+  useGetHotelRequestsQuery,
+  useApproveHotelRequestMutation,
+  useRejectHotelRequestMutation
 } = api

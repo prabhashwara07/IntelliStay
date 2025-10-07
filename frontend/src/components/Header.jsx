@@ -19,6 +19,9 @@ export default function Header() {
       skip: !user,
     });
 
+  const userRole = user?.publicMetadata?.role || 'user';
+  const dashboardPath = userRole === 'admin' ? '/admin' : userRole === 'hotelowner' ? '/dashboard' : null;
+
 
   // Track scroll only on non-home pages where header is fixed/floating
   useEffect(() => {
@@ -84,13 +87,18 @@ export default function Header() {
           <Link to="/hotels" className={`${navLinkBase} ${isActive('/hotels') ? navLinkActive : navLinkInactive}`}>
             Hotels
           </Link>
+          {isLoaded && dashboardPath && (
+            <Link to={dashboardPath} className={`${navLinkBase} ${isActive(dashboardPath) ? navLinkActive : navLinkInactive}`}>
+              Dashboard
+            </Link>
+          )}
+          <Link to="/contact" className={`${navLinkBase} ${isActive('/contact') ? navLinkActive : navLinkInactive}`}>
+            Contact
+          </Link>
           <div className="flex items-center gap-4">
             <SignedIn>
               <Link to="/bookings" className={`${navLinkBase} ${isActive('/bookings') ? navLinkActive : navLinkInactive}`}>
                 Bookings
-              </Link>
-              <Link to="/contact" className={`${navLinkBase} ${isActive('/contact') ? navLinkActive : navLinkInactive}`}>
-                Contact
               </Link>
               <UserButton
                 afterSignOutUrl="/"
@@ -113,15 +121,29 @@ export default function Header() {
                   <UserButton.Action label="manageAccount" />
                   
                   {/* Custom actions with onClick handlers */}
-                  <UserButton.Action 
-                    label="Payment Profile" 
-                    labelIcon={
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                    }
-                    onClick={() => handleBillingOpen()}
-                  />
+                  {userRole !== 'admin' && userRole !== 'hotelowner' && (
+                    <UserButton.Action 
+                      label="Payment Profile" 
+                      labelIcon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      }
+                      onClick={() => handleBillingOpen()}
+                    />
+                  )}
+                  {userRole !== 'admin' && userRole !== 'hotelowner' && (
+                    <UserButton.Action 
+                      label="Become a Partner" 
+                      labelIcon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z" />
+                        </svg>
+                      }
+                      onClick={() => navigate('/become-partner')}
+                    />
+                  )}
                   
                   {/* Built-in sign out action */}
                   <UserButton.Action label="signOut" />
@@ -159,6 +181,21 @@ export default function Header() {
             >
               Hotels
             </Link>
+            <Link 
+              to="/contact" 
+              className="block text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+            {isLoaded && dashboardPath && (
+              <button 
+                className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
+                onClick={() => { setIsMobileMenuOpen(false); navigate(dashboardPath); }}
+              >
+                Dashboard
+              </button>
+            )}
             <div className="pt-2 border-t border-white/15">
               <SignedIn>
                 <button 
@@ -167,19 +204,22 @@ export default function Header() {
                 >
                   Bookings
                 </button>
-                <Link 
-                  to="/contact" 
-                  className="block text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Contact
-                </Link>
-                <button 
-                  className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                  onClick={() => { setIsMobileMenuOpen(false);  handleBillingOpen(); }}
-                >
-                  Payment Profile
-                </button>
+                {userRole !== 'admin' && userRole !== 'hotelowner' && (
+                  <button 
+                    className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
+                    onClick={() => { setIsMobileMenuOpen(false);  handleBillingOpen(); }}
+                  >
+                    Payment Profile
+                  </button>
+                )}
+                {userRole !== 'admin' && userRole !== 'hotelowner' && (
+                  <button 
+                    className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
+                    onClick={() => { setIsMobileMenuOpen(false); navigate('/become-partner'); }}
+                  >
+                    Become a Partner
+                  </button>
+                )}
                 <button 
                   className="block w-full text-left text-red-300 hover:text-red-200 transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
                   onClick={() => { setIsMobileMenuOpen(false); signOut({ redirectUrl: '/' }); }}

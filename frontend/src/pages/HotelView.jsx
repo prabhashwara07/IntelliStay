@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
-import { Badge } from "@/src/components/ui/badge";
 import {
   Tabs,
   TabsContent,
@@ -34,8 +33,6 @@ import {
 import { getAmenityIcons } from "@/src/utils/amenities";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import generateHash from "../utils/PaymentHash";
-import { hash } from "zod";
 
 export default function HotelView() {
   const navigate = useNavigate();
@@ -52,7 +49,7 @@ export default function HotelView() {
   const [numberOfGuests, setNumberOfGuests] = useState(1);
 
   // Calculate total price and nights
-  const selectedRoomData = hotel?.availableRooms?.find(
+  const selectedRoomData = hotel?.rooms?.find(
     (r) => r.roomNumber === selectedRoom
   );
   const numberOfNights =
@@ -97,11 +94,11 @@ export default function HotelView() {
       return;
     }
 
-    const room = hotel.availableRooms?.find(
+    const room = hotel.rooms?.find(
       (r) => r.roomNumber === selectedRoom
     );
     if (!room) {
-      toast.error("Selected room is no longer available");
+      toast.error("Selected room not found");
       return;
     }
 
@@ -132,22 +129,9 @@ export default function HotelView() {
         duration: 3000,
       });
 
-      const formattedTotalPrice = Number(totalPrice).toFixed(2);
-      const paymentHash = generateHash(result.bookingDetails.bookingId, formattedTotalPrice);
-
-      const refactoredPaymentData = {
-        ...result.paymentData,
-        first_name: user?.firstName,
-        last_name: user?.lastName,
-        email: user?.primaryEmailAddress.emailAddress || "guest",
-        hash: paymentHash,
-      };
-
-      console.log("Refactored payment data:", refactoredPaymentData);
-
-      // Automatically submit PayHere form
+      
       if (result.paymentData && result.checkoutUrl) {
-        submitPayHereForm(refactoredPaymentData, result.checkoutUrl);
+        submitPayHereForm(result.paymentData, result.checkoutUrl);
       } else {
         throw new Error("Payment data not received from server");
       }
@@ -258,7 +242,7 @@ export default function HotelView() {
               </div>
             </div>
             <div className="flex-shrink-0 text-right hidden sm:block">
-              <div className="text-2xl sm:text-3xl font-bold text-primary">
+                <div className="text-2xl sm:text-3xl font-bold text-primary">
                 {hotel.priceRange?.minPrice ? (
                   <>Rs. {hotel.priceRange.minPrice.toLocaleString()}</>
                 ) : (
@@ -378,84 +362,28 @@ export default function HotelView() {
               </Card>
             )}
 
-            {/* Available Rooms */}
-            {hotel.availableRooms && hotel.availableRooms.length > 0 && (
-              <Card className="border-0 shadow-sm border-l-4 border-l-green-500">
+            {/* Rooms */}
+            {hotel.rooms && hotel.rooms.length > 0 && (
+              <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                    <h3 className="text-lg font-semibold text-green-700">
-                      Available Rooms
-                    </h3>
-                  </div>
+                  <h3 className="text-lg font-semibold mb-4">Rooms</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {hotel.availableRooms.map((room, index) => (
+                    {hotel.rooms.map((room, index) => (
                       <div
                         key={index}
-                        className="bg-green-50 border border-green-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                        className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
                       >
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-semibold text-green-800">
-                              {room.roomType}
-                            </h4>
-                            <p className="text-sm text-green-600">
-                              Room {room.roomNumber}
-                            </p>
-                          </div>
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            Available
-                          </Badge>
+                        <div className="mb-3">
+                          <h4 className="font-semibold text-gray-900">
+                            {room.roomType}
+                          </h4>
+                          <p className="text-sm text-gray-600">Room {room.roomNumber}</p>
                         </div>
-                        <div className="flex items-center text-sm text-green-700 mb-2">
+                        <div className="flex items-center text-sm text-gray-700 mb-2">
                           <Users className="h-4 w-4 mr-2" />
                           <span>Up to {room.maxGuests} guests</span>
                         </div>
-                        <div className="text-xl font-bold text-green-800">
-                          Rs. {room.pricePerNight.toLocaleString()}
-                          <span className="text-sm font-normal">/night</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Occupied Rooms */}
-            {hotel.unavailableRooms && hotel.unavailableRooms.length > 0 && (
-              <Card className="border-0 shadow-sm border-l-4 border-l-red-500">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-2 w-2 bg-red-500 rounded-full"></div>
-                    <h3 className="text-lg font-semibold text-red-700">
-                      Currently Occupied
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {hotel.unavailableRooms.map((room, index) => (
-                      <div
-                        key={index}
-                        className="bg-red-50 border border-red-200 rounded-xl p-4 opacity-75"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-semibold text-red-800">
-                              {room.roomType}
-                            </h4>
-                            <p className="text-sm text-red-600">
-                              Room {room.roomNumber}
-                            </p>
-                          </div>
-                          <Badge className="bg-red-100 text-red-800 border-red-200">
-                            Occupied
-                          </Badge>
-                        </div>
-                        <div className="flex items-center text-sm text-red-700 mb-2">
-                          <Users className="h-4 w-4 mr-2" />
-                          <span>Up to {room.maxGuests} guests</span>
-                        </div>
-                        <div className="text-xl font-bold text-red-800">
+                        <div className="text-xl font-bold text-gray-900">
                           Rs. {room.pricePerNight.toLocaleString()}
                           <span className="text-sm font-normal">/night</span>
                         </div>
@@ -476,7 +404,7 @@ export default function HotelView() {
                   <div className="text-3xl font-bold text-primary mb-1">
                     {selectedRoom
                       ? (() => {
-                          const room = hotel.availableRooms?.find(
+                          const room = hotel.rooms?.find(
                             (r) => r.roomNumber === selectedRoom
                           );
                           return `Rs. ${
@@ -529,8 +457,8 @@ export default function HotelView() {
                       disabled={isBookingLoading}
                     >
                       <option value="">Choose a room</option>
-                      {hotel.availableRooms &&
-                        hotel.availableRooms.map((room) => (
+                      {hotel.rooms &&
+                        hotel.rooms.map((room) => (
                           <option key={room.roomNumber} value={room.roomNumber}>
                             {room.roomType} - Room {room.roomNumber} (Rs.{" "}
                             {room.pricePerNight.toLocaleString()}/night)
