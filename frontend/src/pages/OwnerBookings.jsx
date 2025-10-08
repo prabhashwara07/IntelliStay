@@ -1,24 +1,22 @@
 import React, { useMemo, useState } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
 import { Card } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
-import { Filter, Building2 } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import OwnerBookingCard from '@/src/components/OwnerBookingCard';
 import BookingNotFound from '@/src/components/NotFound/BookingNotFound';
 import { useGetOwnerBookingsQuery, useGetOwnerHotelsQuery } from '@/src/store/api';
 
 export default function OwnerBookings() {
   const { user, isLoaded } = useUser();
-  const navigate = useNavigate();
 
   const [paymentFilter, setPaymentFilter] = useState('PAID');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Since owner can only have one hotel, we don't need hotel filter
   const { data: hotelsData } = useGetOwnerHotelsQuery(undefined, { skip: !user });
-  const userHotel = hotelsData?.data?.[0]; // Get the single hotel
+  const hotels = hotelsData?.data || [];
+  const [hotelIdFilter, setHotelIdFilter] = useState('');
 
   const {
     data: bookingsResponse,
@@ -30,7 +28,7 @@ export default function OwnerBookings() {
       paymentStatus: paymentFilter,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      // No hotelId filter needed since owner has only one hotel
+      hotelId: hotelIdFilter || undefined,
     },
     { skip: !user?.id }
   );
@@ -58,26 +56,6 @@ export default function OwnerBookings() {
 
   if (!isLoaded) return <div className="min-h-screen bg-background"><div className="p-6">Loading…</div></div>;
   if (isLoaded && !user) return <div className="min-h-screen bg-background"><div className="p-6">Please sign in.</div></div>;
-
-  // Show message if no hotel exists
-  if (!userHotel) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-6">
-          <Card className="p-8 text-center">
-            <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">No Hotel Registered</h2>
-            <p className="text-muted-foreground mb-4">
-              You need to register a hotel first before viewing bookings.
-            </p>
-            <Button onClick={() => navigate('/become-partner')}>
-              Register Your Hotel
-            </Button>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoadingBookings) {
     return (
@@ -112,11 +90,18 @@ export default function OwnerBookings() {
           <div>
             <h2 className="text-xl font-semibold">Hotel Bookings</h2>
             <p className="text-sm text-muted-foreground">
-              Showing {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'} for {userHotel.name}
+              Showing {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 text-xs md:text-sm">
-            {/* Removed hotel filter since owner has only one hotel */}
+              <div className="flex flex-wrap gap-3 text-xs md:text-sm">
+                {hotels.length > 0 && (
+                  <select value={hotelIdFilter} onChange={e => setHotelIdFilter(e.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm">
+                    <option value="">All Hotels</option>
+                    {hotels.map(h => (
+                      <option key={h._id} value={h._id}>{h.name}</option>
+                    ))}
+                  </select>
+                )}
             <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm">
               <option value="PAID">Paid</option>
               <option value="PENDING">Pending</option>
@@ -124,7 +109,7 @@ export default function OwnerBookings() {
             </select>
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm" />
             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm" />
-            <Button variant="outline" size="sm" className="h-9" onClick={() => { setPaymentFilter('PAID'); setStartDate(''); setEndDate(''); }}>
+                <Button variant="outline" size="sm" className="h-9" onClick={() => { setHotelIdFilter(''); setPaymentFilter('PAID'); setStartDate(''); setEndDate(''); }}>
               <Filter className="h-4 w-4 mr-1" />Reset
             </Button>
           </div>
@@ -135,7 +120,7 @@ export default function OwnerBookings() {
               title="No Bookings Found"
               description="No reservations matched your filters."
               actionButtonText="Clear Filters"
-                            onActionClick={() => { setPaymentFilter('PAID'); setStartDate(''); setEndDate(''); }}
+              onActionClick={() => { setPaymentFilter('PAID'); setStartDate(''); setEndDate(''); }}
             />
           ) : (
             filteredBookings.map(booking => (

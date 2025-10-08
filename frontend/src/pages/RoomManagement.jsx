@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
@@ -20,18 +19,13 @@ import {
   Utensils,
   Shield,
   Users,
-  Square,
-  Building2,
-  Clock,
-  AlertCircle,
-  Loader2
+  Square
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import { useCreateRoomMutation, useGetOwnerHotelsQuery, useGetHotelByIdQuery } from '@/src/store/api';
-import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 
 // Initial empty list; will be populated after selection/fetch
@@ -79,13 +73,11 @@ export default function RoomManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
+  const [selectedHotelId, setSelectedHotelId] = useState('');
 
   const { user } = useUser();
-  const navigate = useNavigate();
-  const { data: ownerHotelsData, isLoading: isLoadingHotels } = useGetOwnerHotelsQuery(undefined, { skip: !user });
-  
-  // Since owner can only have one hotel, get that single hotel
-  const userHotel = ownerHotelsData?.data?.[0];
+  const { data: ownerHotelsData } = useGetOwnerHotelsQuery(undefined, { skip: !user });
+  const hotels = ownerHotelsData?.data || [];
   const [createRoom, { isLoading: isCreating }] = useCreateRoomMutation();
 
   const form = useForm({
@@ -99,12 +91,17 @@ export default function RoomManagement() {
     }
   });
 
-  // Fetch hotel details if hotel exists and is approved
-  const { data: hotelDetails } = useGetHotelByIdQuery(userHotel?._id, { 
-    skip: !userHotel?._id || userHotel?.status !== 'approved'
-  });
-  
-  const backendRooms = hotelDetails?.rooms || [];
+  // Auto-select the owner's hotel (prefer approved; fallback to first)
+  useEffect(() => {
+    if (!selectedHotelId && hotels.length > 0) {
+      const preferred = hotels.find((h) => h.status === 'approved') || hotels[0];
+      setSelectedHotelId(preferred._id);
+    }
+  }, [hotels, selectedHotelId]);
+
+  // Fetch current hotel's rooms
+  const { data: selectedHotelDetails } = useGetHotelByIdQuery(selectedHotelId, { skip: !selectedHotelId });
+  const backendRooms = selectedHotelDetails?.rooms || [];
   const uiRooms = useMemo(() => backendRooms.map((r, idx) => ({
     id: r._id || String(idx),
     roomNumber: r.roomNumber,
@@ -133,29 +130,22 @@ export default function RoomManagement() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddRoom = async (data) => {
-    if (!userHotel?._id) {
-      toast.error('No hotel found');
-      return;
-    }
-
-    try {
-      await createRoom({
-        hotelId: userHotel._id,
-        room: {
-          roomNumber: data.roomNumber,
-          roomType: data.roomType,
-          pricePerNight: Number(data.pricePerNight),
-          maxGuests: Number(data.maxGuests),
-          isAvailable: data.isAvailable ?? true,
-        }
-      }).unwrap();
-      
-      toast.success('Room added successfully');
-      setShowAddForm(false);
+  const handleAddRoom = async (values) => {
+    if (!selectedHotelId) return;
+    const payload = {
+      hotelId: selectedHotelId,
+      room: {
+        roomNumber: values.roomNumber,
+        roomType: values.roomType,
+        pricePerNight: Number(values.pricePerNight),
+        maxGuests: Number(values.maxGuests),
+        isAvailable: !!values.isAvailable,
+      },
+    };
+    const res = await createRoom(payload);
+    if (!('error' in res)) {
       form.reset();
-    } catch (error) {
-      toast.error(error?.data?.message || 'Failed to add room');
+      setShowAddForm(false);
     }
   };
 
@@ -163,81 +153,6 @@ export default function RoomManagement() {
 
   const toggleAmenity = (_amenity) => {};
 
-  if (isLoadingHotels) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  // Show message if no hotel exists
-  if (!userHotel) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-6">
-          <Card className="p-8 text-center">
-            <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">No Hotel Registered</h2>
-            <p className="text-muted-foreground mb-4">
-              You need to register a hotel first before managing rooms.
-            </p>
-            <Button onClick={() => navigate('/become-partner')}>
-              Register Your Hotel
-            </Button>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Show message if hotel is pending approval
-  if (userHotel.status === 'pending') {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-6">
-          <Card className="p-8 text-center">
-            <Clock className="h-16 w-16 mx-auto mb-4 text-yellow-500" />
-            <h2 className="text-xl font-semibold mb-2">{userHotel.name}</h2>
-            <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 mb-4">
-              Pending Approval
-            </Badge>
-            <p className="text-muted-foreground mb-4">
-              Your hotel is under review. Room management will be available once approved.
-            </p>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              Back to Home
-            </Button>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Show message if hotel was rejected
-  if (userHotel.status === 'rejected') {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="p-6">
-          <Card className="p-8 text-center">
-            <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
-            <h2 className="text-xl font-semibold mb-2">{userHotel.name}</h2>
-            <Badge className="bg-red-100 text-red-700 border-red-200 mb-4">
-              Rejected
-            </Badge>
-            <p className="text-muted-foreground mb-4">
-              Your hotel registration was not approved. Please contact support for more information.
-            </p>
-            <Button variant="outline" onClick={() => navigate('/contact')}>
-              Contact Support
-            </Button>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Main room management interface (only for approved hotels)
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 pt-10 pb-10">
@@ -245,9 +160,7 @@ export default function RoomManagement() {
         <div className="mb-8">
           <Badge className="mb-2 bg-primary/10 text-primary border-primary/20">Room Management</Badge>
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">Manage Your Rooms</h1>
-          <p className="text-muted-foreground mt-2">
-            Managing rooms for: <span className="font-medium">{userHotel.name}</span>
-          </p>
+          <p className="text-muted-foreground mt-2">Add, edit, and manage your hotel rooms and amenities.</p>
         </div>
 
         {/* Controls */}
@@ -282,7 +195,22 @@ export default function RoomManagement() {
           </div>
         </div>
 
-
+        {/* Selected hotel context */}
+        {hotels.length === 0 && (
+          <Card className="mb-6 p-4">
+            <div className="text-sm text-muted-foreground">
+              No hotel found for your account. Please submit a hotel for approval first.
+            </div>
+          </Card>
+        )}
+        {hotels.length > 0 && selectedHotelId && (
+          <div className="mb-4 text-sm text-muted-foreground">
+            Managing rooms for: <span className="font-medium text-foreground">{hotels.find(h => h._id === selectedHotelId)?.name}</span>
+            {hotels.find(h => h._id === selectedHotelId)?.status && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-muted">{hotels.find(h => h._id === selectedHotelId)?.status}</span>
+            )}
+          </div>
+        )}
 
         {/* Add/Edit Room Form */}
         {showAddForm && (

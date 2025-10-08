@@ -8,6 +8,8 @@ import { BadRequestError, ValidationError } from "../domain/errors";
 import { SearchHotelDTO } from "../domain/dtos/SearchHotelDTO";
 import { CreateRoomDTO } from "../domain/dtos/RoomDTO";
 import { getAuth } from "@clerk/express";
+import { extractFiltersFromQuery } from "./utils/aiFilterExtraction";
+import { searchAndFilterHotels, SearchAndFilterOptions } from "./utils/filterHotels";
 
 // Extend Request type to include user from Clerk
 interface AuthenticatedRequest extends Request {
@@ -38,83 +40,29 @@ export const getAllHotels = async (req: Request, res: Response, next: NextFuncti
       onlyTopRated?: string;
     };
 
-    let query: any = {
-      status: 'approved',
-      rooms: { $exists: true, $ne: [] }
-    };
-    let populateOptions = 'location';
-
-    // Build the MongoDB query based on filters
-    
-    // Price range filtering
-    if (minPrice || maxPrice) {
-      query.priceStartingFrom = {};
-      if (minPrice) {
-        query.priceStartingFrom.$gte = parseFloat(minPrice);
-      }
-      if (maxPrice) {
-        query.priceStartingFrom.$lte = parseFloat(maxPrice);
-      }
-    }
-
-    // Star rating filtering (can be multiple values)
-    if (starRating) {
-      const ratings = Array.isArray(starRating) ? starRating : [starRating];
-      const numericRatings = ratings.map(r => parseInt(r)).filter(r => !isNaN(r));
-      if (numericRatings.length > 0) {
-        query.starRating = { $in: numericRatings };
-      }
-    }
-
-    // Amenities filtering (can be multiple values)
-    if (amenities) {
-      const amenitiesList = Array.isArray(amenities) ? amenities : [amenities];
-      if (amenitiesList.length > 0) {
-        // Filter for hotels that have ALL of the selected amenities (AND logic)
-        query.amenities = { $all: amenitiesList };
-      }
-    }
-
-    // Top rated filtering (4.5+ rating)
-    if (onlyTopRated === 'true' || onlyTopRated === 'on') {
-      query.averageRating = { $gte: 4.5 };
-    }
-
-    const hotels = await Hotel.find(query)
-      .populate(populateOptions)
-      .select('_id name description imageUrls starRating averageRating priceStartingFrom amenities location')
+    // Get all hotels with basic query
+    const hotels = await Hotel.find({})
+      .populate('location')
+      .select('_id name description imageUrls starRating averageRating priceStartingFrom amenities location status rooms')
       .lean();
 
-    // Apply additional filters that require populated data or text search
-    let filteredHotels = hotels;
+    // Parse filters for the search function
+    const parsedFilters: SearchAndFilterOptions = {
+      country,
+      search,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      starRating: starRating 
+        ? (Array.isArray(starRating) ? starRating : [starRating]).map(r => parseInt(r)).filter(r => !isNaN(r))
+        : undefined,
+      amenities: amenities 
+        ? (Array.isArray(amenities) ? amenities : [amenities])
+        : undefined,
+      onlyTopRated: onlyTopRated === 'true' || onlyTopRated === 'on'
+    };
 
-    // Country filtering
-    if (country && country.trim().length > 0) {
-      filteredHotels = filteredHotels.filter((hotel: any) => 
-        hotel.location?.country?.toLowerCase() === country.toLowerCase()
-      );
-    }
-
-    // Search by name or location (case-insensitive)
-    if (search && search.trim().length > 0) {
-      const searchTerm = search.toLowerCase().trim();
-      filteredHotels = filteredHotels.filter((hotel: any) => {
-        const nameMatch = hotel.name?.toLowerCase().includes(searchTerm);
-        const cityMatch = hotel.location?.city?.toLowerCase().includes(searchTerm);
-        const countryMatch = hotel.location?.country?.toLowerCase().includes(searchTerm);
-        return nameMatch || cityMatch || countryMatch;
-      });
-    }
-
-    // Sort by rating (highest first) and then by price (lowest first)
-    filteredHotels.sort((a: any, b: any) => {
-      // First sort by average rating (descending)
-      if (b.averageRating !== a.averageRating) {
-        return (b.averageRating || 0) - (a.averageRating || 0);
-      }
-      // Then sort by price (ascending)
-      return (a.priceStartingFrom || 0) - (b.priceStartingFrom || 0);
-    });
+    // Use the extracted search and filter function
+    const filteredHotels = searchAndFilterHotels(hotels as any, parsedFilters);
 
     // Transform data for frontend
     const transformedHotels = filteredHotels.map((hotel: any) => ({
@@ -149,6 +97,7 @@ export const getAllHotels = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
+
 
 export const getHotelById = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -285,12 +234,6 @@ export const createHotel = async (req: AuthenticatedRequest, res: Response, next
       throw new ValidationError("Hotel name, description, location, and amenities are required");
     }
 
-    // NEW: Check if user already owns a hotel
-    const existingHotel = await Hotel.findOne({ ownerId: userId });
-    if (existingHotel) {
-      throw new BadRequestError("You can only own one hotel. You already have a hotel registered.");
-    }
-
     if (!Array.isArray(amenities) || amenities.length === 0) {
       throw new ValidationError("At least one amenity must be selected");
     }
@@ -361,6 +304,10 @@ export const getAllHotelsBySearchQuery = async (
     }
     const { query } = result.data;
 
+    console.log('[AI Search] Processing query:', query);
+    const extractedFilters = await extractFiltersFromQuery(query);
+    console.log('[AI Search] Extracted filters:', extractedFilters);
+
     const queryEmbedding = await generateEmbedding(query);
 
     const hotels = await Hotel.aggregate([
@@ -369,12 +316,11 @@ export const getAllHotelsBySearchQuery = async (
           index: "hotelVectorIndex",
           path: "embedding",
           queryVector: queryEmbedding,
-          numCandidates: 100,  // Increased for better results
-          limit: 8,           // Return more results
-          
+          numCandidates: 150,
+          limit: 50,
         },
       },
-      // Ensure hotels have at least one room (array non-empty) after vector search
+      // Pre-filter for basic requirements
       { $match: { rooms: { $exists: true, $ne: [] } } },
       { $match: { status: { $eq: "approved" } } },
       // Lookup location details
@@ -392,53 +338,87 @@ export const getAllHotelsBySearchQuery = async (
           preserveNullAndEmptyArrays: true
         }
       },
-      // Calculate review statistics if needed
-      {
-        $lookup: {
-          from: "reviews",
-          localField: "reviews",
-          foreignField: "_id",
-          as: "reviewDetails"
-        }
-      },
       {
         $addFields: {
-          totalReviews: { $size: "$reviewDetails" },
           vectorScore: { $meta: "vectorSearchScore" }
         }
       },
-      // Final projection with correct field names
+      // FIXED: Include status, rooms, and full amenities array
       {
         $project: {
           _id: 1,
           name: 1,
           description: 1,
-          imageUrl: { $arrayElemAt: ["$imageUrls", 0] }, // Get first image
-          imageUrls: 1,
+          imageUrls: 1,  // Keep full array for flexibility
           starRating: 1,
           averageRating: 1,
           priceStartingFrom: 1,
-          amenities: { $slice: ["$amenities", 8] }, // Limit amenities
+          amenities: 1,  // FIXED: Don't slice here - let searchAndFilterHotels handle it
+          status: 1,     // FIXED: Include for searchAndFilterHotels validation
+          rooms: 1,      // FIXED: Include for searchAndFilterHotels validation
           location: {
             city: "$locationDetails.city",
             country: "$locationDetails.country"
           },
-          totalReviews: 1,
-          score: "$vectorScore", // Relevance score from vector search
-          // Don't return the actual embedding or review details
+          vectorScore: 1
         }
       },
-      // Sort by relevance score (highest first)
       {
-        $sort: { score: -1 }
+        $sort: { vectorScore: -1 }
       }
     ]);
+
+    console.log(`[AI Search] Vector search returned ${hotels.length} candidates`);
+
+    // Debug: Log first hotel to see structure
+    if (hotels.length > 0) {
+      console.log('[AI Search] Sample hotel structure:', {
+        hasStatus: !!hotels[0].status,
+        hasRooms: !!hotels[0].rooms,
+        location: hotels[0].location,
+        amenitiesCount: hotels[0].amenities?.length
+      });
+    }
+
+    const searchOptions: SearchAndFilterOptions = {
+      minPrice: extractedFilters.priceRange?.min,
+      maxPrice: extractedFilters.priceRange?.max,
+      starRating: extractedFilters.starRating,
+      amenities: extractedFilters.amenities,
+      onlyTopRated: extractedFilters.onlyTopRated,
+      city: extractedFilters.location?.city,
+      country: extractedFilters.location?.country,
+    };
+
+    console.log('[AI Search] Applying filters:', searchOptions);
+
+    const filteredHotels = searchAndFilterHotels(hotels, searchOptions);
+
+    console.log(`[AI Search] Returning ${filteredHotels.length} hotels after hard filtering`);
+
+    // Transform data for frontend response
+    const transformedHotels = filteredHotels.map((hotel: any) => ({
+      _id: hotel._id,
+      name: hotel.name,
+      description: hotel.description,
+      imageUrl: hotel.imageUrls?.[0] || null,
+      starRating: hotel.starRating,
+      averageRating: hotel.averageRating,
+      priceStartingFrom: hotel.priceStartingFrom,
+      amenities: hotel.amenities?.slice(0, 8) || [],  // Slice here instead
+      location: {
+        city: hotel.location?.city,
+        country: hotel.location?.country
+      },
+      relevanceScore: hotel.vectorScore
+    }));
 
     res.status(200).json({
       success: true,
       query: query,
-      count: hotels.length,
-      data: hotels
+      extractedFilters: extractedFilters,
+      count: transformedHotels.length,
+      data: transformedHotels
     });
   } catch (error) {
     console.error('Error in getAllHotelsBySearchQuery:', error);
@@ -446,17 +426,14 @@ export const getAllHotelsBySearchQuery = async (
   }
 };
 
+
 // List hotels owned by the authenticated user (including pending/approved)
 export const getOwnerHotels = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    
     const userId = getAuth(req).userId;
     
-    // Since one owner can only have one hotel, find that single hotel
-    const hotel = await Hotel.findOne({ ownerId: userId }).select('_id name status').lean();
-    
-    // Return as array for consistency with frontend expectations, but with max 1 item
-    const hotels = hotel ? [hotel] : [];
-    
+    const hotels = await Hotel.find({ ownerId: userId }).select('_id name status').lean();
     res.status(200).json({ success: true, data: hotels });
   } catch (error) {
     next(error);
