@@ -3,7 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import { Card } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Filter } from 'lucide-react';
-import BookingCard from '@/src/components/BookingCard';
+import OwnerBookingCard from '@/src/components/OwnerBookingCard';
 import BookingNotFound from '@/src/components/NotFound/BookingNotFound';
 import { useGetOwnerBookingsQuery, useGetOwnerHotelsQuery } from '@/src/store/api';
 
@@ -37,6 +37,7 @@ export default function OwnerBookings() {
     if (!bookingsResponse?.data) return [];
     return bookingsResponse.data.map(booking => ({
       id: booking.id,
+      userId: booking.userId,
       hotel: booking.hotel,
       room: booking.room,
       checkIn: booking.checkIn,
@@ -50,6 +51,8 @@ export default function OwnerBookings() {
   }, [bookingsResponse]);
 
   const filteredBookings = transformedBookings;
+
+
 
   if (!isLoaded) return <div className="min-h-screen bg-background"><div className="p-6">Loading…</div></div>;
   if (isLoaded && !user) return <div className="min-h-screen bg-background"><div className="p-6">Please sign in.</div></div>;
@@ -85,8 +88,10 @@ export default function OwnerBookings() {
       <div className="p-6">
         <div className="flex items-end flex-wrap gap-3 justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold">Bookings</h2>
-            <p className="text-sm text-muted-foreground">View and manage reservations</p>
+            <h2 className="text-xl font-semibold">Hotel Bookings</h2>
+            <p className="text-sm text-muted-foreground">
+              Showing {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'}
+            </p>
           </div>
               <div className="flex flex-wrap gap-3 text-xs md:text-sm">
                 {hotels.length > 0 && (
@@ -109,7 +114,7 @@ export default function OwnerBookings() {
             </Button>
           </div>
         </div>
-        <div className="space-y-6">
+        <div className="space-y-3">
           {filteredBookings.length === 0 ? (
             <BookingNotFound 
               title="No Bookings Found"
@@ -119,7 +124,7 @@ export default function OwnerBookings() {
             />
           ) : (
             filteredBookings.map(booking => (
-              <BookingCard key={booking.id} booking={booking} />
+              <OwnerBookingCard key={booking.id} booking={booking} />
             ))
           )}
         </div>

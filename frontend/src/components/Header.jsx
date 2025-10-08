@@ -97,9 +97,11 @@ export default function Header() {
           </Link>
           <div className="flex items-center gap-4">
             <SignedIn>
-              <Link to="/bookings" className={`${navLinkBase} ${isActive('/bookings') ? navLinkActive : navLinkInactive}`}>
-                Bookings
-              </Link>
+              {userRole !== 'admin' && userRole !== 'hotelowner' && (
+                <Link to="/bookings" className={`${navLinkBase} ${isActive('/bookings') ? navLinkActive : navLinkInactive}`}>
+                  Bookings
+                </Link>
+              )}
               <UserButton
                 afterSignOutUrl="/"
                 appearance={{
@@ -151,11 +153,11 @@ export default function Header() {
               </UserButton>
             </SignedIn>
             <SignedOut>
-              <SignInButton mode="modal">
+              <Link to="/sign-in">
                 <Button className="bg-white text-brand-primary hover:bg-white/90 shadow-sm">
                   Sign In
                 </Button>
-              </SignInButton>
+              </Link>
             </SignedOut>
           </div>
         </nav>
@@ -163,76 +165,122 @@ export default function Header() {
         {/* Mobile Menu Button */}
         <button 
           onClick={toggleMobileMenu}
-          className={`md:hidden p-2 text-white/90 hover:text-white transition-colors rounded-xl ${isHome ? 'hover:bg-white/10' : 'hover:bg-white/10'} ${scrolled && !isHome ? 'bg-white/5 backdrop-blur-sm' : ''}`}
+          className={`md:hidden p-3 text-white/90 hover:text-white transition-all duration-200 rounded-xl hover:bg-white/10 active:scale-95 ${scrolled && !isHome ? 'bg-white/5 backdrop-blur-sm shadow-lg' : ''}`}
           aria-label="Toggle mobile menu"
         >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          <div className="relative">
+            {isMobileMenuOpen ? (
+              <X size={24} className="transition-transform duration-200" />
+            ) : (
+              <Menu size={24} className="transition-transform duration-200" />
+            )}
+          </div>
         </button>
       </div>
 
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-gradient-to-b from-brand-primary/95 to-brand-primary/85 border-t border-white/15 rounded-b-2xl backdrop-blur">
-          <nav className="px-6 py-4 space-y-4">
-            <Link 
-              to="/hotels" 
-              className="block text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Hotels
-            </Link>
-            <Link 
-              to="/contact" 
-              className="block text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Contact
-            </Link>
-            {isLoaded && dashboardPath && (
-              <button 
-                className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                onClick={() => { setIsMobileMenuOpen(false); navigate(dashboardPath); }}
+        <div className="md:hidden bg-gradient-to-b from-brand-primary/95 to-brand-primary/85 border-t border-white/15 rounded-b-2xl backdrop-blur animate-in slide-in-from-top-2 duration-300">
+          <nav className="px-6 py-6 space-y-1">
+            {/* Main Navigation Section */}
+            <div className="space-y-1">
+              <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3 px-2">
+                Navigation
+              </div>
+              <Link 
+                to="/hotels" 
+                className={`flex items-center text-white/90 hover:text-white transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-white/10 group ${isActive('/hotels') ? 'bg-white/10 text-white' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                Dashboard
-              </button>
-            )}
-            <div className="pt-2 border-t border-white/15">
+                <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Hotels
+              </Link>
+              <Link 
+                to="/contact" 
+                className={`flex items-center text-white/90 hover:text-white transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-white/10 group ${isActive('/contact') ? 'bg-white/10 text-white' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Contact
+              </Link>
+              {isLoaded && dashboardPath && (
+                <button 
+                  className={`flex items-center w-full text-left text-white/90 hover:text-white transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-white/10 group ${isActive(dashboardPath) ? 'bg-white/10 text-white' : ''}`}
+                  onClick={() => { setIsMobileMenuOpen(false); navigate(dashboardPath); }}
+                >
+                  <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Dashboard
+                </button>
+              )}
+            </div>
+
+            {/* User Actions Section */}
+            <div className="pt-4 border-t border-white/15">
+              <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3 px-2">
+                Account
+              </div>
               <SignedIn>
-                <button 
-                  className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                  onClick={() => { setIsMobileMenuOpen(false); navigate('/bookings'); }}
-                >
-                  Bookings
-                </button>
                 {userRole !== 'admin' && userRole !== 'hotelowner' && (
                   <button 
-                    className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                    onClick={() => { setIsMobileMenuOpen(false);  handleBillingOpen(); }}
+                    className="flex items-center w-full text-left text-white/90 hover:text-white transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-white/10 group"
+                    onClick={() => { setIsMobileMenuOpen(false); navigate('/bookings'); }}
                   >
-                    Payment Profile
+                    <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    My Bookings
                   </button>
                 )}
                 {userRole !== 'admin' && userRole !== 'hotelowner' && (
-                  <button 
-                    className="block w-full text-left text-white/90 hover:text-white transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                    onClick={() => { setIsMobileMenuOpen(false); navigate('/become-partner'); }}
-                  >
-                    Become a Partner
-                  </button>
+                  <>
+                    <button 
+                      className="flex items-center w-full text-left text-white/90 hover:text-white transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-white/10 group"
+                      onClick={() => { setIsMobileMenuOpen(false); handleBillingOpen(); }}
+                    >
+                      <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      Payment Profile
+                    </button>
+                    <button 
+                      className="flex items-center w-full text-left text-white/90 hover:text-white transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-white/10 group"
+                      onClick={() => { setIsMobileMenuOpen(false); navigate('/become-partner'); }}
+                    >
+                      <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z" />
+                      </svg>
+                      Become a Partner
+                    </button>
+                  </>
                 )}
-                <button 
-                  className="block w-full text-left text-red-300 hover:text-red-200 transition-colors font-medium py-3 px-2 rounded-lg hover:bg-white/10"
-                  onClick={() => { setIsMobileMenuOpen(false); signOut({ redirectUrl: '/' }); }}
-                >
-                  Sign Out
-                </button>
+                <div className="pt-2 border-t border-white/10">
+                  <button 
+                    className="flex items-center w-full text-left text-red-300 hover:text-red-200 transition-all duration-200 font-medium py-3 px-3 rounded-xl hover:bg-red-500/10 group"
+                    onClick={() => { setIsMobileMenuOpen(false); signOut({ redirectUrl: '/' }); }}
+                  >
+                    <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
               </SignedIn>
               <SignedOut>
-                <SignInButton mode="modal">
-                  <Button className="w-full bg-white text-brand-primary hover:bg-white/90">
+                <Link to="/sign-in">
+                  <Button className="w-full bg-white text-brand-primary hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-200 font-semibold py-3">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
                     Sign In
                   </Button>
-                </SignInButton>
+                </Link>
               </SignedOut>
             </div>
           </nav>

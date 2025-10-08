@@ -26,17 +26,7 @@ export default function Footer() {
           <div className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} IntelliStay. All rights reserved.
           </div>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#privacy" className="text-sm text-muted-foreground hover:text-brand-primary transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#terms" className="text-sm text-muted-foreground hover:text-brand-primary transition-colors">
-              Terms of Service
-            </a>
-            <a href="#cookies" className="text-sm text-muted-foreground hover:text-brand-primary transition-colors">
-              Cookie Policy
-            </a>
-          </div>
+          
         </div>
       </div>
     </footer>

@@ -27,12 +27,7 @@ export default function Unauthorized() {
                 Go to Home
               </Link>
             </Button>
-            <Button variant="outline" asChild className="w-full">
-              <Link to="javascript:history.back()">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Go Back
-              </Link>
-            </Button>
+            
           </div>
         </CardContent>
       </Card>

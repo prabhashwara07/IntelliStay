@@ -192,6 +192,16 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
     const formattedBookings = bookings.map((booking: any) => {
       const hotel = booking.hotelId;
 
+      // Check if hotel exists (population might return null if hotel was deleted)
+      if (!hotel) {
+        console.error('Hotel not found for booking:', {
+          bookingId: booking._id,
+          hotelId: booking.hotelId,
+          roomId: booking.roomId
+        });
+        return null; // Skip this booking
+      }
+
       // Find the specific room from hotel.rooms array using roomId
       const room = hotel.rooms?.find((r: any) => r._id.toString() === booking.roomId.toString());
 
@@ -233,8 +243,11 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
       };
     });
 
+    // Filter out null bookings (hotels that don't exist)
+    const validBookings = formattedBookings.filter(booking => booking !== null);
+
     // Validate each booking response
-    const validatedBookings = formattedBookings.map(booking =>
+    const validatedBookings = validBookings.map(booking =>
       BookingResponseDTO.parse(booking)
     );
 
@@ -437,6 +450,17 @@ export const getBookingsForOwner = async (req: Request, res: Response, next: Nex
 
     const formatted = bookings.map((booking: any) => {
       const hotel = booking.hotelId;
+      
+      // Check if hotel exists (population might return null if hotel was deleted)
+      if (!hotel) {
+        console.error('Hotel not found for owner booking:', {
+          bookingId: booking._id,
+          hotelId: booking.hotelId,
+          roomId: booking.roomId
+        });
+        return null; // Skip this booking
+      }
+      
       const room = hotel.rooms?.find((r: any) => r._id.toString() === booking.roomId.toString());
       return {
         id: booking._id.toString(),
@@ -468,7 +492,10 @@ export const getBookingsForOwner = async (req: Request, res: Response, next: Nex
       };
     });
 
-    const validated = BookingsResponseDTO.parse(formatted);
+    // Filter out null bookings (hotels that don't exist)
+    const validBookings = formatted.filter(booking => booking !== null);
+
+    const validated = BookingsResponseDTO.parse(validBookings);
     res.status(200).json({ success: true, data: validated });
   } catch (error) {
     next(error);

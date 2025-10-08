@@ -14,8 +14,10 @@ import RoomManagement from "./pages/RoomManagement";
 import OwnerBookings from "./pages/OwnerBookings";
 import AdminHotelRequests from "./pages/AdminHotelRequests";
 import Unauthorized from "./pages/Unauthorized";
-import DashboardLayout from "./components/DashboardLayout";
-import AdminDashboardLayout from "./components/AdminDashboardLayout";
+import NotFound from "./pages/NotFound";
+import SignIn from "./pages/SignIn";
+import DashboardLayout from "./components/layouts/DashboardLayout";
+import AdminDashboardLayout from "./components/layouts/AdminDashboardLayout";
 import { ProtectedRoute, HotelOwnerRoute, AdminRoute, PublicRoute } from "./components/ProtectedRoute";
 
 function App() {
@@ -31,6 +33,9 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/become-partner" element={<BecomePartner />} />
           </Route>
+
+          {/* Auth routes - no layout */}
+          <Route path="/sign-in" element={<SignIn />} />
 
           {/* Protected user routes */}
           <Route element={<Layout />}>
@@ -72,6 +77,9 @@ function App() {
 
           {/* Error pages */}
           <Route path="/unauthorized" element={<Unauthorized />} />
+          
+          {/* Catch-all route for 404 - must be last */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Toaster position="top-right" richColors />

@@ -4,7 +4,7 @@ import { get } from 'react-hook-form'
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'https://intellistay.onrender.com/',
+    baseUrl: 'http://localhost:3000/',
     prepareHeaders: async (headers) => {
       try {
         const clerk = window?.Clerk

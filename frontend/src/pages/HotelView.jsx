@@ -571,7 +571,7 @@ export default function HotelView() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Free cancellation until 24h before</span>
+                    <span>Secure Payment Processing via Payhere</span>
                   </div>
                 </div>
               </CardContent>

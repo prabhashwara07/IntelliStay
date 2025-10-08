@@ -323,8 +323,8 @@ export const createHotel = async (req: AuthenticatedRequest, res: Response, next
       rooms: [],
       reviews: [],
       priceStartingFrom: 5000,
-      starRating: 0,
-      averageRating: 0,
+      starRating: 1,
+      averageRating: 1,
       
       status: 'pending',
       ownerId: userId,

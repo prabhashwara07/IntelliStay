@@ -51,7 +51,7 @@ export default function Hotels() {
   );
   const [onlyTopRated, setOnlyTopRated] = useState(searchParams.get('topRated') === 'true');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'featured');
-  const [viewMode, setViewMode] = useState('grid'); // grid or list
+  const [viewMode, setViewMode] = useState('grid'); // grid or list - defaults to grid for mobile
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
@@ -402,8 +402,8 @@ export default function Hotels() {
                   ))}
                 </select>
 
-                {/* View Mode Toggle */}
-                <div className="flex border border-input rounded-md">
+                {/* View Mode Toggle - Hidden on mobile */}
+                <div className="hidden md:flex border border-input rounded-md">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`px-3 py-1.5 text-sm ${viewMode === 'grid' ? 'bg-accent text-accent-foreground' : 'bg-background text-foreground'} rounded-l-md`}
@@ -484,7 +484,7 @@ export default function Hotels() {
                   </div>
                 )}
 
-                <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-6' : 'space-y-4'}>
+                <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6' : 'space-y-4'}>
                   {hotels.map((hotel) => (
                     <HotelCard 
                       key={hotel._id} 
