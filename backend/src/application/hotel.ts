@@ -285,6 +285,12 @@ export const createHotel = async (req: AuthenticatedRequest, res: Response, next
       throw new ValidationError("Hotel name, description, location, and amenities are required");
     }
 
+    // NEW: Check if user already owns a hotel
+    const existingHotel = await Hotel.findOne({ ownerId: userId });
+    if (existingHotel) {
+      throw new BadRequestError("You can only own one hotel. You already have a hotel registered.");
+    }
+
     if (!Array.isArray(amenities) || amenities.length === 0) {
       throw new ValidationError("At least one amenity must be selected");
     }
@@ -443,10 +449,14 @@ export const getAllHotelsBySearchQuery = async (
 // List hotels owned by the authenticated user (including pending/approved)
 export const getOwnerHotels = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    
     const userId = getAuth(req).userId;
     
-    const hotels = await Hotel.find({ ownerId: userId }).select('_id name status').lean();
+    // Since one owner can only have one hotel, find that single hotel
+    const hotel = await Hotel.findOne({ ownerId: userId }).select('_id name status').lean();
+    
+    // Return as array for consistency with frontend expectations, but with max 1 item
+    const hotels = hotel ? [hotel] : [];
+    
     res.status(200).json({ success: true, data: hotels });
   } catch (error) {
     next(error);

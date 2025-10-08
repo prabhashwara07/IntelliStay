@@ -42,7 +42,7 @@ export default function Header() {
 
   // Base header classes: solid + gradient for stronger visible brand color (removed transparency that made it appear white)
   const baseHeaderClasses = 'z-50 transition-all duration-300 bg-brand-primary bg-gradient-to-r from-brand-primary to-brand-primary';
-  const homeLayoutClasses = 'relative mt-6 mx-6 md:mx-10 rounded-3xl border border-white/15 shadow-2xl';
+  const homeLayoutClasses = 'relative mt-6 mx-4 md:mx-10 rounded-3xl border border-white/15 shadow-2xl';
   const floatingLayoutClasses = `fixed top-6 left-6 right-6 rounded-3xl border ${scrolled ? 'border-white/20 shadow-xl' : 'border-white/15 shadow-2xl'}`;
   const headerClassName = `${baseHeaderClasses} ${isHome ? homeLayoutClasses : floatingLayoutClasses}`;
 
@@ -181,7 +181,7 @@ export default function Header() {
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-gradient-to-b from-brand-primary/95 to-brand-primary/85 border-t border-white/15 rounded-b-2xl backdrop-blur animate-in slide-in-from-top-2 duration-300">
-          <nav className="px-6 py-6 space-y-1">
+          <nav className="px-2 py-4 space-y-1">
             {/* Main Navigation Section */}
             <div className="space-y-1">
               <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3 px-2">
