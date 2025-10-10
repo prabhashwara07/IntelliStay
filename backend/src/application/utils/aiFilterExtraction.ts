@@ -147,11 +147,11 @@ Query: "hotels in UK"
     if (!content) return {};
 
     const filters = JSON.parse(content) as ExtractedFilters;
-    console.log('Extracted filters:', filters);
+    
     return validateAndSanitizeFilters(filters, { locations, amenities });
     
   } catch (error) {
-    console.error('AI filter extraction failed:', error);
+    
     return {}; // Fallback to empty filters
   }
 }

@@ -304,9 +304,7 @@ export const getAllHotelsBySearchQuery = async (
     }
     const { query } = result.data;
 
-    console.log('[AI Search] Processing query:', query);
     const extractedFilters = await extractFiltersFromQuery(query);
-    console.log('[AI Search] Extracted filters:', extractedFilters);
 
     const queryEmbedding = await generateEmbedding(query);
 
@@ -317,7 +315,7 @@ export const getAllHotelsBySearchQuery = async (
           path: "embedding",
           queryVector: queryEmbedding,
           numCandidates: 150,
-          limit: 50,
+          limit: 12,
         },
       },
       // Pre-filter for basic requirements
@@ -368,17 +366,8 @@ export const getAllHotelsBySearchQuery = async (
       }
     ]);
 
-    console.log(`[AI Search] Vector search returned ${hotels.length} candidates`);
 
-    // Debug: Log first hotel to see structure
-    if (hotels.length > 0) {
-      console.log('[AI Search] Sample hotel structure:', {
-        hasStatus: !!hotels[0].status,
-        hasRooms: !!hotels[0].rooms,
-        location: hotels[0].location,
-        amenitiesCount: hotels[0].amenities?.length
-      });
-    }
+    
 
     const searchOptions: SearchAndFilterOptions = {
       minPrice: extractedFilters.priceRange?.min,
@@ -390,11 +379,9 @@ export const getAllHotelsBySearchQuery = async (
       country: extractedFilters.location?.country,
     };
 
-    console.log('[AI Search] Applying filters:', searchOptions);
 
     const filteredHotels = searchAndFilterHotels(hotels, searchOptions);
 
-    console.log(`[AI Search] Returning ${filteredHotels.length} hotels after hard filtering`);
 
     // Transform data for frontend response
     const transformedHotels = filteredHotels.map((hotel: any) => ({
