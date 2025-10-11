@@ -1,57 +1,28 @@
 # IntelliStay - AI-Powered Hotel Management & Booking Platform
 
-A comprehensive hotel management and booking platform featuring AI-integrated search capabilities, multi-role architecture, and complete hotel lifecycle management. Built as a modern alternative to traditional booking platforms with intelligent natural language processing and advanced hotel owner tools.
+A comprehensive hotel management and booking platform featuring advanced AI search capabilities, multi-role architecture, and complete hotel lifecycle management. Built with MERN stack and integrated with cutting-edge AI technologies for natural language processing and semantic search.
 
 ## 🌟 Key Features
 
 ### For Travelers
-- 🤖 **AI-Powered Search**: Natural language hotel search using OpenAI integration
-- 🏨 **Smart Recommendations**: AI-driven hotel suggestions based on preferences
-- 💳 **Secure Payments**: Integrated payment processing with PayHere
-- 📱 **Responsive Design**: Seamless experience across all devices
-- 📋 **Booking Management**: Complete booking history and status tracking
-- � **Secure Authentication**: Clerk-powered user authentication
+- 🤖 **AI-Powered Search**: Natural language hotel search with RAG (Retrieval-Augmented Generation)
+- 🧠 **Smart Feature Extraction**: AI automatically extracts preferences from user queries
+- 🏨 **Semantic Recommendations**: Vector-based hotel matching using embeddings
+- � **Secure Payments**: PayHere payment gateway integration
+- ⭐ **Review System**: Complete booking review and rating functionality
+- 📱 **Responsive Design**: Mobile-first, seamless experience
 
 ### For Hotel Owners
-- 🏢 **Hotel Management**: Complete property management dashboard
-- �️ **Room Management**: Dynamic room creation and inventory control
+- 🏢 **Property Management**: Complete hotel and room management dashboard  
+- 🏠 **Dynamic Room Control**: Add, edit, and manage room inventory
 - 📊 **Booking Analytics**: Real-time booking insights and revenue tracking
-- 👥 **Guest Management**: Customer information and booking details
+- 👥 **Guest Management**: Customer booking details and communication
 - 📸 **Media Management**: Cloudinary integration for image uploads
-- ✅ **Admin Approval**: Hotel listing approval workflow
 
 ### For Administrators
-- 🔍 **Hotel Approval System**: Review and approve new hotel listings
-- 🚫 **Rejection Management**: Handle rejected applications with feedback
-- 👨‍💼 **Platform Oversight**: Complete platform administration tools
-
-## 🏗️ System Architecture
-
-### User Roles & Workflow
-
-```mermaid
-graph TD
-    A[Guest User] --> B[Browse Hotels]
-    A --> C[AI Search Hotels]
-    A --> D[Register/Login]
-    
-    D --> E[Authenticated User]
-    E --> F[Book Hotels]
-    E --> G[Manage Bookings]
-    E --> H[Update Profile]
-    
-    I[Hotel Owner] --> J[Register Property]
-    J --> K[Admin Review]
-    K --> L[Approved] 
-    K --> M[Rejected]
-    L --> N[Manage Rooms]
-    L --> O[View Bookings]
-    L --> P[Track Revenue]
-    
-    Q[Admin] --> R[Review Hotels]
-    Q --> S[Approve/Reject]
-    Q --> T[Platform Management]
-```
+- 🔍 **Hotel Approval Workflow**: Review and approve new hotel listings
+- 🚫 **Rejection Management**: Handle rejections with detailed feedback
+- �️ **Platform Administration**: Complete system oversight and management
 
 ## 🛠️ Technology Stack
 
@@ -88,31 +59,45 @@ graph TD
 IntelliStay/
 ├── backend/
 │   ├── src/
-│   │   ├── api/                    # API routes
+│   │   ├── api/                    # API routes & middleware
 │   │   │   ├── admin.ts           # Admin management endpoints
-│   │   │   ├── booking.ts         # Booking management
-│   │   │   ├── hotel.ts           # Hotel CRUD operations
+│   │   │   ├── booking.ts         # Booking & review management
+│   │   │   ├── hotel.ts           # Hotel CRUD & AI search
 │   │   │   ├── location.ts        # Location services
-│   │   │   └── billingProfile.ts  # User billing profiles
+│   │   │   ├── billingProfile.ts  # User billing profiles
+│   │   │   └── middleware/        # Authentication & validation
 │   │   ├── application/           # Business logic layer
 │   │   │   ├── admin.ts          # Admin operations
 │   │   │   ├── booking.ts        # Booking workflows
 │   │   │   ├── hotel.ts          # Hotel management
-│   │   │   └── utils/            # Utility functions
-│   │   │       ├── embeddings.ts # AI vector embeddings
-│   │   │       ├── hotelEmbedding.ts # Hotel AI search
-│   │   │       └── payhere.ts    # Payment integration
+│   │   │   ├── review.ts         # Review system
+│   │   │   ├── location.ts       # Location services
+│   │   │   ├── billingProfile.ts # Billing operations
+│   │   │   └── utils/            # AI & utility functions
+│   │   │       ├── embeddings.ts      # OpenAI vector embeddings
+│   │   │       ├── hotelEmbedding.ts  # Hotel semantic search
+│   │   │       ├── aiFilterExtraction.ts # AI feature extraction
+│   │   │       ├── filterHotels.ts    # Hotel filtering logic
+│   │   │       └── payhere.ts         # Payment integration
 │   │   ├── domain/               # Domain models & DTOs
 │   │   │   ├── dtos/            # Data transfer objects
+│   │   │   │   ├── BookingDTO.ts
+│   │   │   │   ├── ReviewDTO.ts
+│   │   │   │   ├── RoomDTO.ts
+│   │   │   │   ├── SearchHotelDTO.ts
+│   │   │   │   └── BillingProfileDTO.ts
 │   │   │   └── errors/          # Custom error classes
 │   │   ├── infrastructure/       # Data access layer
 │   │   │   ├── database.ts      # MongoDB connection
 │   │   │   ├── clerk.ts         # Authentication setup
 │   │   │   ├── seed.ts          # Database seeding
+│   │   │   ├── updatePrices.ts  # Price update utilities
 │   │   │   └── entities/        # Mongoose models
 │   │   │       ├── Hotel.ts     # Hotel schema
 │   │   │       ├── Booking.ts   # Booking schema
+│   │   │       ├── Review.ts    # Review schema
 │   │   │       ├── Location.ts  # Location schema
+│   │   │       ├── Amenity.ts   # Amenity schema
 │   │   │       └── BillingProfile.ts
 │   │   └── types/               # TypeScript definitions
 │   ├── package.json
@@ -123,143 +108,200 @@ IntelliStay/
 │   │   ├── components/
 │   │   │   ├── ui/              # shadcn/ui components
 │   │   │   ├── layouts/         # Layout components
+│   │   │   ├── NotFound/        # Error pages
 │   │   │   ├── Header.jsx       # Navigation with auth
 │   │   │   ├── HomeHero.jsx     # AI search hero section
 │   │   │   ├── HotelCard.jsx    # Hotel display cards
 │   │   │   ├── BookingCard.jsx  # Customer booking cards
 │   │   │   ├── OwnerBookingCard.jsx # Owner booking management
+│   │   │   ├── ReviewModal.jsx  # Review creation modal
+│   │   │   ├── HotelReviews.jsx # Review display component
 │   │   │   ├── BillingProfileDialog.jsx
-│   │   │   └── AISearchResults.jsx
+│   │   │   ├── AISearchResults.jsx
+│   │   │   ├── HotelRecommendations.jsx
+│   │   │   └── ImageUpload.jsx  # Cloudinary integration
 │   │   ├── pages/
 │   │   │   ├── Home.jsx         # Landing page
 │   │   │   ├── Hotels.jsx       # Hotel listing
-│   │   │   ├── HotelView.jsx    # Hotel details
+│   │   │   ├── HotelView.jsx    # Hotel details & reviews
 │   │   │   ├── Bookings.jsx     # User bookings
 │   │   │   ├── OwnerBookings.jsx # Owner dashboard
 │   │   │   ├── BecomePartner.jsx # Hotel registration
-│   │   │   ├── RoomManagement.jsx
-│   │   │   └── AdminHotelRequests.jsx
+│   │   │   ├── RoomManagement.jsx # Room inventory management
+│   │   │   ├── AdminHotelRequests.jsx # Admin approval system
+│   │   │   ├── Contact.jsx      # Contact page
+│   │   │   └── SignIn.jsx       # Authentication
 │   │   ├── store/
 │   │   │   ├── api.js           # RTK Query API
 │   │   │   ├── store.js         # Redux store
 │   │   │   └── features/        # Redux slices
-│   │   ├── hooks/
+│   │   ├── hooks/               # Custom React hooks
 │   │   ├── schemas/             # Form validation schemas
-│   │   └── utils/
+│   │   └── utils/               # Utility functions
 │   ├── package.json
 │   └── vite.config.js
 ```
 
-## 🔧 Key Features Implementation
+## 🤖 AI Features Implementation
 
-### AI-Powered Search
-- **Natural Language Processing**: OpenAI integration for understanding user queries
-- **Vector Embeddings**: Hotel descriptions converted to embeddings for semantic search
-- **Smart Recommendations**: AI-driven hotel suggestions based on user preferences
-- **Query Understanding**: Handles complex queries like "romantic beachfront hotel under $200"
+### Advanced Search Capabilities
+- **RAG (Retrieval-Augmented Generation)**: Combines vector search with contextual understanding
+- **Feature Extraction**: AI automatically extracts filters from natural language queries
+- **Vector Embeddings**: Hotel descriptions converted to semantic embeddings for similarity matching
+- **Query Understanding**: Handles complex queries like "romantic beachfront resort under $300 with spa"
+
+### Smart Review System
+- **Contextual Reviews**: AI-enhanced review analysis and categorization
+- **Rating Analytics**: Intelligent rating aggregation and insights
+- **Review Recommendations**: Personalized review prompts based on booking experience
 
 ### Multi-Role Architecture
-- **Guest Users**: Browse, search, and book hotels
-- **Hotel Owners**: Manage properties, rooms, and view bookings
-- **Administrators**: Approve hotels and manage the platform
+- **Guest Users**: AI-powered search, booking, and review management
+- **Hotel Owners**: Property and room management with booking analytics
+- **Administrators**: Platform oversight with hotel approval workflows
 
-### Payment Integration
-- **PayHere Gateway**: Sri Lankan payment processing
-- **Secure Transactions**: Encrypted payment handling
-- **Booking Verification**: Webhook-based payment confirmation
-- **Multiple Payment States**: PAID, PENDING, FAILED, CANCELLED
-
-### Real-time Features
-- **Live Booking Updates**: Real-time booking status changes
-- **Instant Search**: Fast AI-powered search results
-- **Dynamic Pricing**: Real-time room availability and pricing
+### Payment & Security
+- **PayHere Gateway**: Secure Sri Lankan payment processing
+- **Webhook Integration**: Real-time payment verification
+- **Role-based Access**: Clerk authentication with granular permissions
 
 ## 🔌 API Endpoints
 
-### Authentication
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User login
-- `GET /auth/profile` - Get user profile
-
 ### Hotels
 - `GET /hotels` - Get all hotels with filters
-- `GET /hotels/:id` - Get hotel details
-- `POST /hotels/createhotel` - Create new hotel (Owner)
-- `GET /hotels/owner/my-hotels` - Get owner's hotels
-- `POST /hotels/:id/rooms` - Add room to hotel
-- `GET /hotels/search/ai` - AI-powered hotel search
+- `GET /hotels/:id` - Get hotel details  
+- `GET /hotels/:id/reviews` - Get hotel reviews
+- `GET /hotels/search/ai` - AI-powered semantic search
+- `POST /hotels/createHotel` - Create new hotel (Owner) 🔐
+- `GET /hotels/owner/my-hotels` - Get owner's hotels 🔐
+- `POST /hotels/:id/rooms` - Add room to hotel 🔐
+- `POST /hotels/:id/embedding` - Generate hotel embeddings
 
-### Bookings
-- `POST /bookings` - Create new booking
-- `GET /bookings/user/:userId` - Get user bookings
-- `GET /bookings/owner` - Get owner's property bookings
-- `POST /bookings/payment/notify` - PayHere webhook
+### Bookings & Reviews
+- `POST /bookings` - Create new booking 🔐
+- `GET /bookings/user/:userId` - Get user bookings 🔐  
+- `GET /bookings/owner` - Get owner's property bookings 🔐
+- `POST /bookings/reviews/:bookingId` - Create booking review 🔐
+- `POST /bookings/payment/notify` - PayHere payment webhook
 
 ### Admin
-- `GET /admin/hotel-requests` - Get pending hotel approvals
-- `PUT /admin/approve/:id` - Approve hotel
-- `PUT /admin/reject/:id` - Reject hotel with reason
+- `GET /admin/hotel-requests` - Get pending hotel approvals 🔐
+- `PUT /admin/approve/:id` - Approve hotel 🔐
+- `PUT /admin/reject/:id` - Reject hotel with reason 🔐
+
+### Locations & Billing
+- `GET /locations` - Get all locations
+- `POST /billing-profiles` - Create billing profile 🔐
+- `GET /billing-profiles/user/:userId` - Get user billing profile 🔐
+
+*🔐 = Authentication Required*
 
 
 
-## 🤖 AI Features Deep Dive
+## 🔍 AI Search Examples
 
-### Natural Language Search
+### Natural Language Queries
 ```javascript
 // Example queries that work:
-"Find me a luxury hotel in Paris with spa facilities"
-"Romantic beachfront resort under $300 per night"
-"Pet-friendly accommodation near downtown with parking"
-"Budget hotel in Tokyo with free WiFi and breakfast"
+"Find me a luxury 5-star hotel in Paris with spa facilities"
+"Romantic beachfront resort under Rs. 30,000 per night" 
+"Pet-friendly accommodation in Tokyo with free WiFi and breakfast"
+"Budget hotel near downtown with parking and gym"
+"Family-friendly resort with pool and kids activities"
 ```
 
-### AI Implementation
-- **OpenAI GPT Integration**: Processes natural language queries
-- **Vector Embeddings**: Hotels stored as semantic vectors
-- **Similarity Search**: Finds matching hotels using cosine similarity
-- **Query Enhancement**: AI improves and expands search terms
+### AI Implementation Details
+- **RAG Architecture**: Combines retrieval with generation for contextual results
+- **Feature Extraction**: Automatically identifies location, price, amenities from queries
+- **Vector Similarity**: Uses OpenAI embeddings for semantic hotel matching
+- **Smart Filtering**: AI converts natural language to structured database filters
 
 ## 👥 User Workflows
 
-### Guest User Journey
-1. **Discovery**: Browse featured hotels or use AI search
-2. **Search**: Enter natural language query for specific needs
-3. **Selection**: View detailed hotel information and amenities
-4. **Booking**: Complete secure booking with payment
-5. **Management**: Track booking status and history
+### Guest Experience
+1. **AI Search** → Enter natural language query for hotels
+2. **Browse Results** → View AI-ranked hotel recommendations  
+3. **Hotel Details** → Read reviews, check amenities and pricing
+4. **Secure Booking** → Complete payment with PayHere integration
+5. **Post-Stay Review** → Rate and review your experience
 
-### Hotel Owner Journey
-1. **Registration**: Submit hotel for platform approval
-2. **Approval**: Wait for admin review and approval
-3. **Setup**: Add rooms, amenities, and media
-4. **Management**: Monitor bookings and guest information
-5. **Analytics**: Track revenue and booking performance
+### Hotel Owner Experience  
+1. **Property Registration** → Submit hotel for admin approval
+2. **Room Management** → Add rooms, set pricing, upload images
+3. **Booking Analytics** → Monitor reservations and revenue
+4. **Guest Reviews** → Respond to customer feedback
 
-### Admin Workflow
-1. **Review**: Evaluate new hotel submissions
-2. **Verification**: Check hotel details and credentials
-3. **Decision**: Approve or reject with feedback
-4. **Monitoring**: Oversee platform operations
+### Admin Experience
+1. **Hotel Approval** → Review new property submissions
+2. **Quality Control** → Approve/reject with detailed feedback
+3. **Platform Management** → Oversee system operations
 
-## 🔒 Security Features
+## � Performance & Security
 
-- **Authentication**: Clerk-powered secure user authentication
-- **Authorization**: Role-based access control (Guest, Owner, Admin)
-- **Data Validation**: Zod schema validation on all inputs
-- **Payment Security**: Encrypted payment processing
-- **API Security**: Protected endpoints with authentication middleware
+### Optimizations
+- **Vector Search**: Fast semantic similarity matching
+- **Database Indexing**: Optimized MongoDB queries for search performance
+- **CDN Integration**: Cloudinary for optimized image delivery
+- **Caching**: RTK Query for efficient API state management
 
-## 📊 Performance Optimizations
-
-- **Database Indexing**: Optimized MongoDB queries
-- **Image Optimization**: Cloudinary automatic image processing
-- **Caching**: RTK Query automatic caching
-- **Code Splitting**: React lazy loading for better performance
-- **Bundle Optimization**: Vite optimization for production builds
+### Security Features
+- **Clerk Authentication**: Enterprise-grade user authentication
+- **Role-based Access**: Granular permissions for different user types
+- **Payment Security**: Encrypted PayHere gateway integration
+- **Data Validation**: Comprehensive Zod schema validation
 
 
 
-## 👨‍💻 Author
+## � Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- MongoDB Atlas account
+- Clerk account for authentication
+- OpenAI API key
+- Cloudinary account
+- PayHere merchant account
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/prabhashwara07/IntelliStay.git
+cd IntelliStay
+```
+
+2. **Backend Setup**
+```bash
+cd backend
+npm install
+cp .env.example .env
+# Configure your environment variables
+npm run seed  # Seed database with sample data
+npm run dev   # Start development server
+```
+
+3. **Frontend Setup**  
+```bash
+cd frontend
+npm install
+npm run dev   # Start development server
+```
+
+4. **Environment Variables**
+```bash
+# Backend (.env)
+MONGODB_URI=your_mongodb_connection_string
+CLERK_SECRET_KEY=your_clerk_secret_key
+OPENAI_API_KEY=your_openai_api_key
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+PAYHERE_MERCHANT_ID=your_payhere_merchant_id
+
+# Frontend (.env)
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+## �👨‍💻 Author
 
 **Prabhash Wara**
 - GitHub: [@prabhashwara07](https://github.com/prabhashwara07)
@@ -267,8 +309,9 @@ IntelliStay/
 
 ## 🙏 Acknowledgments
 
-- OpenAI for AI capabilities
-- Clerk for authentication services
-- Tailwind CSS & shadcn/ui for beautiful UI components
-- MongoDB Atlas for database hosting
-- Cloudinary for media management
+- **OpenAI** for GPT and embedding capabilities
+- **Clerk** for authentication and user management
+- **MongoDB Atlas** for cloud database hosting
+- **Tailwind CSS & shadcn/ui** for beautiful UI components
+- **Cloudinary** for media storage and optimization
+- **PayHere** for payment gateway services
