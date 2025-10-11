@@ -33,6 +33,7 @@ import {
 import { getAmenityIcons } from "@/src/utils/amenities";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
+import HotelReviews from "@/src/components/HotelReviews";
 
 export default function HotelView() {
   const navigate = useNavigate();
@@ -393,6 +394,9 @@ export default function HotelView() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Reviews Section */}
+            <HotelReviews hotelId={id} hotelName={hotel?.name} />
           </div>
 
           {/* Booking Sidebar - Mobile Optimized */}

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
-import { Calendar, MapPin, ExternalLink, Bed, Users, Hash, DoorOpen } from 'lucide-react';
+import { Calendar, MapPin, ExternalLink, Bed, Users, Hash, DoorOpen, Star, CheckCircle } from 'lucide-react';
+import ReviewModal from './ReviewModal';
 
 const paymentStyles = {
   PAID: 'bg-green-100 text-green-700 border-green-200',
@@ -10,7 +11,8 @@ const paymentStyles = {
   FAILED: 'bg-red-100 text-red-700 border-red-200'
 };
 
-export default function BookingCard({ booking }) {
+export default function BookingCard({ booking, onReviewSubmitted }) {
+  const [showReviewModal, setShowReviewModal] = useState(false);
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <div className="flex flex-col md:flex-row">
@@ -109,6 +111,24 @@ export default function BookingCard({ booking }) {
                 <span className="font-semibold text-foreground text-lg">Rs. {booking.totalPrice.toLocaleString()}</span>
               </div>
               <div className="flex gap-2">
+                {/* Review Button/Badge */}
+                {booking.hasReview ? (
+                  <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Reviewed
+                  </Badge>
+                ) : booking.canReview ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs hover:bg-primary hover:text-primary-foreground"
+                    onClick={() => setShowReviewModal(true)}
+                  >
+                    <Star className="h-3 w-3 mr-1" />
+                    Write Review
+                  </Button>
+                ) : null}
+                
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -123,6 +143,14 @@ export default function BookingCard({ booking }) {
           </div>
         </div>
       </div>
+      
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        booking={booking}
+        onReviewSubmitted={onReviewSubmitted}
+      />
     </Card>
   );
 }

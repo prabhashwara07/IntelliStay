@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Types } from 'mongoose';
 import Booking from '../infrastructure/entities/Booking';
 import Hotel from '../infrastructure/entities/Hotel';
+import Review from '../infrastructure/entities/Review';
 import { CreateBookingDTO, GetBookingsQueryDTO, BookingResponseDTO, BookingsResponseDTO } from '../domain/dtos/BookingDTO';
 import { BadRequestError, NotFoundError, InternalServerError } from '../domain/errors';
 import crypto from 'crypto';
@@ -189,6 +190,11 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
       .lean(); // Use lean() for better performance
 
 
+    // Get all booking IDs to check for existing reviews in one query
+    const bookingIds = bookings.map((booking: any) => booking._id);
+    const existingReviews = await Review.find({ bookingId: { $in: bookingIds } }).lean();
+    const reviewMap = new Map(existingReviews.map(review => [review.bookingId.toString(), review]));
+
     const formattedBookings = bookings.map((booking: any) => {
       const hotel = booking.hotelId;
 
@@ -205,13 +211,14 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
       // Find the specific room from hotel.rooms array using roomId
       const room = hotel.rooms?.find((r: any) => r._id.toString() === booking.roomId.toString());
 
-      console.log('Processing booking:', {
-        bookingId: booking._id,
-        hotelName: hotel.name,
-        roomId: booking.roomId,
-        roomFound: !!room,
-        roomDetails: room
-      });
+      // Check if this booking has been reviewed
+      const existingReview = reviewMap.get(booking._id.toString());
+      const currentDate = new Date();
+      const canReview = booking.paymentStatus === 'PAID' && 
+                       booking.checkOut < currentDate && 
+                       !existingReview;
+
+
 
       return {
         id: booking._id.toString(),
@@ -240,6 +247,10 @@ export const getBookingsByUserId = async (req: Request, res: Response, next: Nex
         paymentStatus: booking.paymentStatus,
         createdAt: booking.createdAt,
         updatedAt: booking.updatedAt,
+        // Review status fields
+        canReview,
+        hasReview: !!existingReview,
+        reviewId: existingReview?._id?.toString()
       };
     });
 

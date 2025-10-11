@@ -55,7 +55,11 @@ export default function Bookings() {
       numberOfGuests: booking.numberOfGuests,
       totalPrice: booking.totalPrice,
       createdAt: booking.createdAt,
-      updatedAt: booking.updatedAt
+      updatedAt: booking.updatedAt,
+      // Add review-related fields from backend
+      canReview: booking.canReview,
+      hasReview: booking.hasReview,
+      reviewId: booking.reviewId
     }));
   }, [bookingsResponse]);
 
@@ -186,7 +190,13 @@ export default function Bookings() {
                   }
                 />
               ) : (
-                filteredBookings.map(booking => <BookingCard key={booking.id} booking={booking} />)
+                filteredBookings.map(booking => (
+                  <BookingCard 
+                    key={booking.id} 
+                    booking={booking} 
+                    onReviewSubmitted={refetchBookings}
+                  />
+                ))
               )}
             </div>
           </section>

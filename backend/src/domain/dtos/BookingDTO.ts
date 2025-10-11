@@ -57,6 +57,10 @@ export const BookingResponseDTO = z.object({
   paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED']),
   createdAt: z.date(),
   updatedAt: z.date(),
+  // Review status fields
+  canReview: z.boolean(),
+  hasReview: z.boolean(),
+  reviewId: z.string().optional(),
 });
 
 // Simple bookings response DTO

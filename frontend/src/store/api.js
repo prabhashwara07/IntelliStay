@@ -137,6 +137,25 @@ export const api = createApi({
       }),
       invalidatesTags: ['Bookings'],
     }),
+    // Review endpoints
+    createReview: build.mutation({
+      query: ({ bookingId, rating, comment }) => ({
+        url: `bookings/reviews/${bookingId}`,
+        method: 'POST',
+        body: { rating, comment },
+      }),
+      invalidatesTags: ['Bookings', 'Hotels'], // Invalidate both as reviews affect hotel data
+    }),
+    getHotelReviews: build.query({
+      query: ({ hotelId, page = 1, limit = 10 }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+        return `hotels/${hotelId}/reviews?${params.toString()}`;
+      },
+      providesTags: (_result, _error, { hotelId }) => [{ type: 'Hotels', id: `reviews-${hotelId}` }],
+    }),
     getResultsByAiSearch: build.query({
       query: (search) => `hotels/search/ai?query=${encodeURIComponent(search)}`
     }),
@@ -188,6 +207,9 @@ export const {
   useGetBookingsByUserIdQuery,
   useGetOwnerBookingsQuery,
   useCreateBookingMutation,
+  // Review hooks
+  useCreateReviewMutation,
+  useGetHotelReviewsQuery,
   useGetResultsByAiSearchQuery,
   useLazyGetResultsByAiSearchQuery,
   useCreateHotelMutation,

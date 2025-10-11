@@ -1,15 +1,18 @@
 import express  from 'express';
+import { Types } from 'mongoose';
 import { getAllHotels, getHotelById, generateHotelEmbedding,createHotel, getAllHotelsBySearchQuery, getOwnerHotels, createRoom  } from '../application/hotel';
+import { getHotelReviews } from '../application/review';
 import { isAuthenticated, requireRole, ROLES } from './middleware/authHandler';
 
 const HotelRouter = express.Router();
 
 
 HotelRouter.get("/", getAllHotels);
+HotelRouter.get('/search/ai', getAllHotelsBySearchQuery);
+HotelRouter.get('/:id/reviews', getHotelReviews);
 HotelRouter.get("/:id", getHotelById);
 HotelRouter.post("/", createHotel);
 HotelRouter.post("/:id/embedding", generateHotelEmbedding);
-HotelRouter.get('/search/ai', getAllHotelsBySearchQuery);
 HotelRouter.post('/createHotel', isAuthenticated,createHotel);
 
 // Owner utilities
