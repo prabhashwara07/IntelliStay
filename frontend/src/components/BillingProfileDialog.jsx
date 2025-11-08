@@ -170,13 +170,13 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
       onOpenChange(false);
       resetMutation();
       
-      // Show success notification after dialog closes
-      toast.success('Profile saved successfully!', {
-        description: 'Your billing information has been updated.',
-        duration: 4000,
+      // Show success notification after dialog closes with helpful message
+      toast.success('Billing Profile Created Successfully!', {
+        description: 'You can now proceed with your booking by clicking "Book Now".',
+        duration: 5000,
       });
       
-      // Refetch in background after dialog closes (optional)
+      // Refetch in background after dialog closes
       refetch();
       
     } catch (err) {

@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Heart,
   Share2,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -27,13 +28,20 @@ import {
   CarouselPrevious,
 } from "@/src/components/ui/carousel";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/src/components/ui/alert";
+import {
   useGetHotelByIdQuery,
   useCreateBookingMutation,
+  useGetBillingProfileQuery,
 } from "@/src/store/api";
 import { getAmenityIcons } from "@/src/utils/amenities";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import HotelReviews from "@/src/components/HotelReviews";
+import BillingProfileDialog from "@/src/components/BillingProfileDialog";
 
 export default function HotelView() {
   const navigate = useNavigate();
@@ -43,11 +51,18 @@ export default function HotelView() {
   const [createBooking, { isLoading: isBookingLoading }] =
     useCreateBookingMutation();
 
+  // Billing profile check
+  const { data: billingProfileData } = useGetBillingProfileQuery(
+    user?.id,
+    { skip: !user }
+  );
+
   // Form state
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [numberOfGuests, setNumberOfGuests] = useState(1);
+  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
 
   // Calculate total price and nights
   const selectedRoomData = hotel?.rooms?.find(
@@ -77,6 +92,13 @@ export default function HotelView() {
     // Validation
     if (!userLoaded || !user) {
       toast.error("Please sign in to make a booking");
+      return;
+    }
+
+    // Check for billing profile first
+    if (!billingProfileData?.data) {
+      // Don't show error, just open the dialog
+      setBillingDialogOpen(true);
       return;
     }
 
@@ -546,6 +568,29 @@ export default function HotelView() {
                     </div>
                   )}
 
+                {/* Billing Profile Alert - Show when user is logged in but has no billing profile */}
+                {userLoaded && user && !billingProfileData?.data && (
+                  <Alert className="mt-4 border-blue-200 bg-blue-50">
+                    <AlertCircle className="h-4 w-4 text-blue-600" />
+                    <AlertTitle className="text-blue-900 font-semibold">
+                      Billing Profile Required
+                    </AlertTitle>
+                    <AlertDescription className="text-blue-800 mt-2">
+                      <p className="mb-3">
+                        You need to set up your billing profile before making a booking.
+                        This helps us process your payment securely.
+                      </p>
+                      <Button
+                        onClick={() => setBillingDialogOpen(true)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        Set Up Billing Profile
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {userLoaded && user ? (
                   <Button
                     onClick={handleBooking}
@@ -583,6 +628,12 @@ export default function HotelView() {
           </div>
         </div>
       </div>
+
+      {/* Billing Profile Dialog */}
+      <BillingProfileDialog 
+        open={billingDialogOpen} 
+        onOpenChange={setBillingDialogOpen}
+      />
     </div>
   );
 }
