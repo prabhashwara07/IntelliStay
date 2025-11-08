@@ -16,6 +16,11 @@ export const approveHotelRequest = async (req: Request, res: Response, next: Nex
   try {
     const { id } = req.params;
 
+    // Get the authenticated admin user ID
+    const adminUserId = getAuth(req).userId;
+    if (!adminUserId) {
+      throw new BadRequestError('Admin user ID not found');
+    }
 
     const hotel = await Hotel.findById(id);
     if (!hotel) {
@@ -39,8 +44,10 @@ export const approveHotelRequest = async (req: Request, res: Response, next: Nex
       throw new InternalServerError('Failed to update owner role in Clerk');
     }
 
-    // Update hotel status to approved
+    // Update hotel status to approved and set review metadata
     hotel.status = 'approved';
+    hotel.reviewedAt = new Date();
+    hotel.reviewedBy = adminUserId;
     
     await hotel.save();
 
@@ -58,6 +65,11 @@ export const rejectHotelRequest = async (req: Request, res: Response, next: Next
   try {
     const { id } = req.params;
 
+    // Get the authenticated admin user ID
+    const adminUserId = getAuth(req).userId;
+    if (!adminUserId) {
+      throw new BadRequestError('Admin user ID not found');
+    }
 
     const hotel = await Hotel.findById(id);
     if (!hotel) {
@@ -65,11 +77,20 @@ export const rejectHotelRequest = async (req: Request, res: Response, next: Next
     }
 
     if (hotel.status === 'rejected') {
-      throw new BadRequestError('Hotel is already approved');
+      throw new BadRequestError('Hotel is already rejected');
     }
 
-    // Update hotel status to approved
+    // Optional: Get rejection reason from request body
+    const { rejectionReason } = req.body;
+
+    // Update hotel status to rejected and set review metadata
     hotel.status = 'rejected';
+    hotel.reviewedAt = new Date();
+    hotel.reviewedBy = adminUserId;
+    if (rejectionReason) {
+      hotel.rejectionReason = rejectionReason;
+    }
+    
     await hotel.save();
 
     res.status(200).json({

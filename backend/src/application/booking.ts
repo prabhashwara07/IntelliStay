@@ -5,7 +5,7 @@ import Booking from '../infrastructure/entities/Booking';
 import Hotel from '../infrastructure/entities/Hotel';
 import Review from '../infrastructure/entities/Review';
 import { CreateBookingDTO, GetBookingsQueryDTO, BookingResponseDTO, BookingsResponseDTO } from '../domain/dtos/BookingDTO';
-import { BadRequestError, NotFoundError, InternalServerError } from '../domain/errors';
+import { BadRequestError, NotFoundError, InternalServerError, ForbiddenError } from '../domain/errors';
 import crypto from 'crypto';
 import { clerkClient, getAuth } from '@clerk/express';
 import generateHash from './utils/payhere';
@@ -144,39 +144,44 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
 
 
 export const getBookingsByUserId = async (req: Request, res: Response, next: NextFunction) => {
-  // Validate query parameters
-  const queryData = {
-    userId: req.params.userId,
-    paymentStatus: req.query.paymentStatus as string,
-    startDate: req.query.startDate as string,
-    endDate: req.query.endDate as string,
-  };
-
-  const validatedQuery = GetBookingsQueryDTO.parse(queryData);
-  const { userId, paymentStatus, startDate, endDate } = validatedQuery;
-
-
-  
-  const filter: any = { userId };
-
-  
-  if (paymentStatus) {
-    filter.paymentStatus = paymentStatus;
-  }
-
-  // Add date range filter if provided
-  if (startDate || endDate) {
-    filter.checkIn = {};
-    if (startDate) {
-      filter.checkIn.$gte = startDate;
-    }
-    if (endDate) {
-      filter.checkIn.$lte = endDate;
-    }
-  }
-
-
   try {
+    // Validate query parameters
+    const queryData = {
+      userId: req.params.userId,
+      paymentStatus: req.query.paymentStatus as string,
+      startDate: req.query.startDate as string,
+      endDate: req.query.endDate as string,
+    };
+
+    const validatedQuery = GetBookingsQueryDTO.parse(queryData);
+    const { userId, paymentStatus, startDate, endDate } = validatedQuery;
+
+    // Authorization check: ensure user can only access their own bookings
+    const authenticatedUserId = getAuth(req).userId;
+    if (authenticatedUserId !== userId) {
+      throw new ForbiddenError('You are not authorized to access these bookings');
+    }
+
+    
+    const filter: any = { userId };
+
+  
+    if (paymentStatus) {
+      filter.paymentStatus = paymentStatus;
+    }
+
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      filter.checkIn = {};
+      if (startDate) {
+        filter.checkIn.$gte = startDate;
+      }
+      if (endDate) {
+        filter.checkIn.$lte = endDate;
+      }
+    }
+
+
     const bookings = await Booking.find(filter)
       .populate({
         path: 'hotelId',

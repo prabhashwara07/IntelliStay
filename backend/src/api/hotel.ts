@@ -11,9 +11,8 @@ HotelRouter.get("/", getAllHotels);
 HotelRouter.get('/search/ai', getAllHotelsBySearchQuery);
 HotelRouter.get('/:id/reviews', getHotelReviews);
 HotelRouter.get("/:id", getHotelById);
-HotelRouter.post("/", createHotel);
 HotelRouter.post("/:id/embedding", generateHotelEmbedding);
-HotelRouter.post('/createHotel', isAuthenticated,createHotel);
+HotelRouter.post('/createHotel', isAuthenticated, createHotel);
 
 // Owner utilities
 HotelRouter.get('/owner/my-hotels', isAuthenticated,requireRole([ROLES.HOTELOWNER]), getOwnerHotels);
