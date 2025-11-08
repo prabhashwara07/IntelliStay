@@ -27,8 +27,7 @@ export default function Home() {
     // Trigger the search manually
     try {
       const result = await triggerSearch(searchQuery).unwrap();
-      setResults(result);
-      console.log("Search results:", result);
+  setResults(result);
     } catch (error) {
       console.error("Search failed:", error);
     } finally {
@@ -58,9 +57,8 @@ export default function Home() {
   // Keyboard shortcut handler for Escape key
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && hasSearched) {
+        if (event.key === 'Escape' && hasSearched) {
         handleClearSearch();
-        console.log("Search cleared with Escape key");
       }
     };
 

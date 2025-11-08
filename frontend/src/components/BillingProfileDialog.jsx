@@ -81,23 +81,18 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
   // Refetch data when dialog opens
   useEffect(() => {
     if (open && user) {
-      console.log('[BillingProfileDialog] Refetching billing profile...', { userId: user.id, open });
-      refetch()
-        .then((res) => {
-          console.log('[BillingProfileDialog] Refetch result:', res);
-        })
-        .catch((err) => {
-          console.error('[BillingProfileDialog] Refetch error:', err);
-        });
+      // Refetch billing profile when dialog opens
+      refetch().catch((err) => {
+        console.error('[BillingProfileDialog] Refetch error:', err);
+      });
     }
   }, [open, user, refetch]);
 
   // FIXED: Populate form when data is available
   useEffect(() => {
     if (open && billingProfile?.data && user && !isLoadingProfile) {
-      // Access the nested data property
-      const profileData = billingProfile.data;
-      console.log('[BillingProfileDialog] Populating form with profileData:', profileData);
+  // Access the nested data property
+  const profileData = billingProfile.data;
       
       const formData = {
         mobile: profileData.mobile || '',
@@ -121,32 +116,13 @@ export default function BillingProfileDialog({ open, onOpenChange }) {
     }
   }, [open, billingProfile, user, isLoadingProfile, form]);
 
-  // Debug: Log high-level query state changes
-  useEffect(() => {
-    console.log('[BillingProfileDialog] State:', {
-      open,
-      isLoaded,
-      userId: user?.id,
-      shouldSkipQuery,
-      isLoadingProfile,
-      isFetching,
-      isQuerySuccess,
-    });
-  }, [open, isLoaded, user, shouldSkipQuery, isLoadingProfile, isFetching, isQuerySuccess]);
-
   // Debug: Log query error details
   useEffect(() => {
     if (queryError) {
       console.error('[BillingProfileDialog] Query error encountered:', queryError);
     }
   }, [queryError]);
-
-  // Debug: Log payload whenever it changes
-  useEffect(() => {
-    if (billingProfile) {
-      console.log('[BillingProfileDialog] billingProfile payload changed:', billingProfile);
-    }
-  }, [billingProfile]);
+  
 
   // Reset mutation states when dialog closes
   useEffect(() => {

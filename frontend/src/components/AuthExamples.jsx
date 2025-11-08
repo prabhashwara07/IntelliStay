@@ -144,10 +144,9 @@ export default function AuthExamples() {
         </CardHeader>
         <CardContent>
           {isSignedIn && (
-            <Button 
+              <Button 
               onClick={() => {
                 // Add custom logic before signing out
-                console.log('User is signing out...');
                 signOut();
               }}
               variant="destructive"

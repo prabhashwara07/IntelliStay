@@ -139,12 +139,12 @@ export default function HotelView() {
         numberOfGuests,
       };
 
-      console.log("Creating booking:", bookingData);
+  // Creating booking data (debug logs removed)
 
       // Call backend API
       const result = await createBooking(bookingData).unwrap();
 
-      console.log("Booking created, initiating payment:", result);
+  // Booking created; initiating payment (debug logs removed)
 
       // Show success message
       toast.success("Booking created! Redirecting to payment...", {
@@ -189,8 +189,6 @@ export default function HotelView() {
 
     // Append form to body and submit
     document.body.appendChild(form);
-
-    console.log("Submitting PayHere form:", paymentData);
 
     // Submit form (redirects user to PayHere)
     form.submit();
